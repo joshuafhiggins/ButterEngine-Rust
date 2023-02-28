@@ -69,6 +69,12 @@ fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
         glfw::WindowEvent::Key(glfw::Key::Escape, _, glfw::Action::Press, _) => {
             window.set_should_close(true);
         }
+        glfw::WindowEvent::Key(glfw::Key::F5, _, glfw::Action::Press, _) => {
+            crate::renderer::wireframe_on();
+        }
+        glfw::WindowEvent::Key(glfw::Key::F6, _, glfw::Action::Press, _) => {
+            crate::renderer::wireframe_off();
+        }
         _ => {}
     }
 }

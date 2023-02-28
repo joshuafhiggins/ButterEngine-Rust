@@ -5,6 +5,7 @@ use std::ptr;
 use std::str;
 
 pub struct Shader {
+    name: String,
     program: u32
 }
 
@@ -61,7 +62,7 @@ impl Shader {
             shader_program
         };
         
-        return Shader {program: program};
+        return Shader {name: name, program: program};
     }
 
     pub fn bind(&self) {
