@@ -5,7 +5,7 @@ use glfw::Context;
 pub struct Window {
     pub handle: glfw::Window,
     pub glfw: glfw::Glfw,
-    pub events: Receiver<(f64, glfw::WindowEvent)>
+    pub events: Receiver<(f64, glfw::WindowEvent)>,
 }
 
 impl Window {
@@ -24,7 +24,7 @@ impl Window {
         window.set_all_polling(true);
         window.glfw.set_swap_interval(framerate);
 
-        return Window { handle: window, glfw: glfw, events: events };
+        return Window { handle: window, glfw: glfw, events: events};
     }
 
     pub fn center(&mut self) {
@@ -63,11 +63,11 @@ impl Window {
  
 }
 
-fn handle_window_event(handle: &mut glfw::Window, event: glfw::WindowEvent) {
+fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
     //TODO: Handle all events
     match event {
         glfw::WindowEvent::Key(glfw::Key::Escape, _, glfw::Action::Press, _) => {
-            handle.set_should_close(true)
+            window.set_should_close(true);
         }
         _ => {}
     }
