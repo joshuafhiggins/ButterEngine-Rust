@@ -1,0 +1,17 @@
+[package]
+name = "butter_engine_rs"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+gl = "0.14.0"
+nuklear-rust = "0.6.3"
+alto = "3.0.4"
+stb_image = "0.2.4"
+cgmath = "0.18.0"
+
+[dependencies.glfw]
+version = "0.51.0"
+default-features = false
