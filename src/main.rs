@@ -1,6 +1,4 @@
 mod window;
-mod bufferobject;
-mod vertex;
 use window::Window;
 
 fn main() {
