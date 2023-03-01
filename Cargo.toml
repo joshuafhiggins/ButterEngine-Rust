@@ -11,6 +11,8 @@ nuklear-rust = "0.6.3"
 alto = "3.0.4"
 stb_image = "0.2.4"
 cgmath = "0.18.0"
+configurable = "0.3.5"
+serde = "1.0.152"
 
 [dependencies.glfw]
 version = "0.51.0"

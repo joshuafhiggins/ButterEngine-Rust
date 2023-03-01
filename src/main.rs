@@ -1,6 +1,7 @@
 mod window;
 mod shader;
 mod renderer;
+mod settings;
 
 use std::ptr;
 use renderer::BufferObject;
@@ -24,14 +25,14 @@ fn main() {
             -0.5, -0.5, 0.0,  // bottom left
             -0.5,  0.5, 0.0   // top left
         ];
-    let indices = [ // note that we start from 0!
+    let indices: [i32; 6] = [ // note that we start from 0!
         0, 1, 3,  // first Triangle
         1, 2, 3   // second Triangle
     ];
 
     let vao: VAO = VAO::new();
-    VBO::new(vertices.to_vec(), 0, 3, &vao);
-    IBO::new(indices.to_vec(), &vao);
+    let vbo: VBO = VBO::new(vertices.to_vec(), 0, 3, &vao);
+    let ibo: IBO = IBO::new(indices.to_vec(), &vao);
 
     while !window.should_close() {
         //TODO: Render
@@ -47,7 +48,7 @@ fn main() {
         unsafe {
             // gl::DrawArrays(gl::TRIANGLES, 0, 3);
             //TODO: Create a Mesh struct
-            gl::DrawElements(gl::TRIANGLES, indices.len() as i32, gl::UNSIGNED_INT, ptr::null());
+            gl::DrawElements(gl::TRIANGLES, ibo.get_indices().len() as i32, gl::UNSIGNED_INT, ptr::null());
         }
         vao.unbind();
         shader.unbind();
@@ -56,6 +57,9 @@ fn main() {
         window.poll_events();
     }
 
+    vbo.cleanup();
+    ibo.cleanup();
+    vao.cleanup();
     shader.cleanup();
 }
 

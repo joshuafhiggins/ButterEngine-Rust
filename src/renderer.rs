@@ -38,8 +38,8 @@ impl BufferObject for VAO {
 }
 
 pub struct VBO {
-    id: u32,
-    data: Vec<f32>
+    pub id: u32,
+    pub data: Vec<f32>
 }
 
 impl VBO {
@@ -64,6 +64,9 @@ impl VBO {
         vao.unbind();
 
         return vbo;
+    }
+    pub fn get_data(&self) -> &Vec<f32> {
+        &self.data
     }
 }
 
@@ -111,6 +114,9 @@ impl IBO {
         vao.unbind();
 
         return ibo;
+    }
+    pub fn get_indices(&self) -> &Vec<i32> {
+        &self.indices
     }
 }
 
