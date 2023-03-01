@@ -146,14 +146,18 @@ pub trait BufferObject {
     fn cleanup(&self);
 }
 
-pub fn wireframe_on() {
-    unsafe {
-        gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
-    }
+pub fn toggle_wireframe(is_wireframe: &mut bool) {
+    *is_wireframe = !*is_wireframe;
+    update_wireframe(&is_wireframe);
 }
 
-pub fn wireframe_off() {
-    unsafe {
-        gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
+pub fn update_wireframe(is_wireframe: &bool) {
+    match is_wireframe {
+        true => unsafe {
+            gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+        },
+        false => unsafe {
+            gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
+        },
     }
 }

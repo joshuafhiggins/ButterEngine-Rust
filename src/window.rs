@@ -1,6 +1,7 @@
-use std::sync::mpsc::Receiver;
+use std::{sync::mpsc::Receiver, ffi::c_int};
+use glfw::{Context, ffi};
 
-use glfw::Context;
+use crate::settings::Settings;
 
 pub struct Window {
     pub handle: glfw::Window,
@@ -9,22 +10,22 @@ pub struct Window {
 }
 
 impl Window {
-    pub fn new(width: u32, height: u32, title: &str, mode: glfw::WindowMode, framerate: glfw::SwapInterval) -> Window {
+    pub fn new(width: u32, height: u32, title: &str, framerate: i32) -> Window {
         let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
-
-        let (mut window, events) = glfw.create_window(width, height, title, mode)
+        let (window, events) = glfw.create_window(width, height, title, glfw::WindowMode::Windowed)
             .expect("Failed to create GLFW window.");
-    
-        glfw.window_hint(glfw::WindowHint::ContextVersion(3, 3));
-        glfw.window_hint(glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core));
+        let mut our_window = Window { handle: window, glfw: glfw, events: events};
+
+        our_window.glfw.window_hint(glfw::WindowHint::ContextVersion(3, 3));
+        our_window.glfw.window_hint(glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core));
         #[cfg(target_os = "macos")]
-        glfw.window_hint(glfw::WindowHint::OpenGlForwardCompat(true));
+        our_window.glfw.window_hint(glfw::WindowHint::OpenGlForwardCompat(true));
 
-        window.make_current();
-        window.set_all_polling(true);
-        window.glfw.set_swap_interval(framerate);
+        our_window.handle.make_current();
+        our_window.handle.set_all_polling(true);
+        our_window.set_swap_interval(framerate);
 
-        return Window { handle: window, glfw: glfw, events: events};
+        return our_window;
     }
 
     pub fn center(&mut self) {
@@ -43,9 +44,15 @@ impl Window {
         self.glfw.poll_events();
     }
 
-    pub fn process_events(&mut self) {
+    pub fn process_events(&mut self, settings: &mut Settings) {
         for (_, event) in glfw::flush_messages(&self.events) {
-            handle_window_event(&mut self.handle, event);
+            handle_window_event(&mut self.handle, event, settings);
+        }
+    }
+
+    pub fn set_swap_interval(&mut self, interval: i32) {
+        unsafe {
+            ffi::glfwSwapInterval(interval as c_int);
         }
     }
 
@@ -63,17 +70,14 @@ impl Window {
  
 }
 
-fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
+fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent, settings: &mut Settings) {
     //TODO: Handle all events
     match event {
         glfw::WindowEvent::Key(glfw::Key::Escape, _, glfw::Action::Press, _) => {
             window.set_should_close(true);
         }
         glfw::WindowEvent::Key(glfw::Key::F5, _, glfw::Action::Press, _) => {
-            crate::renderer::wireframe_on();
-        }
-        glfw::WindowEvent::Key(glfw::Key::F6, _, glfw::Action::Press, _) => {
-            crate::renderer::wireframe_off();
+            crate::renderer::toggle_wireframe(&mut settings.is_wireframe);
         }
         _ => {}
     }

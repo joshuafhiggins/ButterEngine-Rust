@@ -8,14 +8,17 @@ use renderer::BufferObject;
 use renderer::IBO;
 use renderer::VAO;
 use renderer::VBO;
+use settings::Settings;
 use window::Window;
 use shader::Shader;
 
 fn main() {
-    //TODO: Load settings from text file
-    let mut window = Window::new(1280, 720, "Butter Engine", glfw::WindowMode::Windowed, glfw::SwapInterval::Sync(1));
+    let mut settings: Settings = settings::load();
+    
+    let mut window = Window::new(settings.width, settings.height, &settings.title, settings.swap_interval);
     window.center();
     window.init_gl();
+    renderer::update_wireframe(&settings.is_wireframe);
 
     let shader: Shader = Shader::new("triangle".to_string());
 
@@ -38,7 +41,7 @@ fn main() {
         //TODO: Render
         //TODO: ecs/physics/sound/ui/engine updates
 
-        window.process_events();
+        window.process_events(&mut settings);
 
         unsafe {
             gl::Clear(gl::COLOR_BUFFER_BIT);
@@ -61,6 +64,8 @@ fn main() {
     ibo.cleanup();
     vao.cleanup();
     shader.cleanup();
+
+    settings::save(settings).expect("Unable to save settings!");
 }
 
 
