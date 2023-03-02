@@ -1,4 +1,5 @@
 use std::fs;
+use cgmath::*;
 use gl::types::*;
 use std::ffi::CString;
 use std::ptr;
@@ -80,6 +81,30 @@ impl Shader {
     pub fn cleanup(&self) {
         unsafe {
             gl::DeleteProgram(self.program);
+        }
+    }
+
+    pub fn set_uniform_4f32(&self, label: String, vec4f: Vector4<f32>) {
+        let c_label = CString::new(label).unwrap();
+        unsafe {
+            let location = gl::GetUniformLocation(self.program, c_label.as_ptr());
+            gl::Uniform4f(location, vec4f.x, vec4f.y, vec4f.z, vec4f.w);
+        }
+    }
+
+    pub fn set_uniform_3f32(&self, label: String, vec3f: Vector3<f32>) {
+        let c_label = CString::new(label).unwrap();
+        unsafe {
+            let location = gl::GetUniformLocation(self.program, c_label.as_ptr());
+            gl::Uniform3f(location, vec3f.x, vec3f.y, vec3f.z);
+        }
+    }
+
+    pub fn set_uniform_2f32(&self, label: String, vec2f: Vector2<f32>) {
+        let c_label = CString::new(label).unwrap();
+        unsafe {
+            let location = gl::GetUniformLocation(self.program, c_label.as_ptr());
+            gl::Uniform2f(location, vec2f.x, vec2f.y);
         }
     }
 }

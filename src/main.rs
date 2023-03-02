@@ -14,7 +14,6 @@ use shader::Shader;
 
 fn main() {
     let mut settings: Settings = settings::load();
-    
     let mut window = Window::new(settings.width, settings.height, &settings.title, settings.swap_interval);
     window.center();
     window.init_gl();
