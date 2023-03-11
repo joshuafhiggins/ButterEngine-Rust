@@ -55,7 +55,7 @@ dependencies = [
  "glfw",
  "nuklear-rust",
  "serde",
- "stb_image",
+ "stb_image_rust",
  "toml",
 ]
 
@@ -407,14 +407,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
 
 [[package]]
-name = "stb_image"
-version = "0.2.4"
+name = "stb_image_rust"
+version = "2.27.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d40a3a511d44640d35f0a371c0069c6a97f4ea5e8fc295120df6b0a00476ae61"
-dependencies = [
- "cc",
- "libc",
-]
+checksum = "d682a002ab01d5e09f47d22cfe4a55a8451cdaef5b0f87d6c8b8c3bc4360b6aa"
 
 [[package]]
 name = "syn"
