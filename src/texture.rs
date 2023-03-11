@@ -9,6 +9,7 @@ pub struct Texture {
 impl Texture {
     pub fn new(name: String) -> Texture {
         let mut texture: Texture = Texture { handle: 0 };
+        let image: Image = Image::new(name.clone());
 
         unsafe {
             gl::GenTextures(1, &mut texture.handle);
@@ -21,54 +22,22 @@ impl Texture {
             // set texture filtering parameters
             gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
             gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
-        }
-
-        // Load file into memory
-        let mut f = File::open(format!("resources/textures/{}.png", name)).expect("file not found");
-        let mut contents = vec![];
-        f.read_to_end(&mut contents);
-
-	    // Load the image
-        let mut width: i32 = 0;
-        let mut height: i32 = 0;
-        let mut comp: i32 = 0;
-        let img: *mut u8;
-
-        unsafe {
-            // load image, create texture and generate mipmaps
-            stb_image_rust::stbi_set_flip_vertically_on_load(true as i32);
-            img = stb_image_rust::stbi_load_from_memory(
-                contents.as_mut_ptr(),
-                contents.len() as i32,
-                &mut width,
-                &mut height,
-                &mut comp,
-                0,
-            );
-            
-            let image_load_type = match comp {
-                3 => gl::RGB,
-                4 => gl::RGBA,
-                _ => gl::RGB
-            };
-
+ 
             gl::TexImage2D(
                 gl::TEXTURE_2D,
                 0,
-                comp,
-                width,
-                height,
+                image.componenets,
+                image.width,
+                image.height,
                 0,
-                image_load_type,
+                image.opengl_load_type,
                 gl::UNSIGNED_BYTE,
-                img as *const u8 as *const c_void,
+                image.data as *const u8 as *const c_void,
             );
             gl::GenerateMipmap(gl::TEXTURE_2D);
         }
         texture.unbind();
-        unsafe {
-            stb_image_rust::c_runtime::free(img);
-        }
+
         return texture;
     }
 }
@@ -89,6 +58,52 @@ impl renderer::GPUObject for Texture {
     fn cleanup(&self) {
         unsafe {
             gl::DeleteTextures(1, &self.handle);
+        }
+    }
+}
+
+struct Image {
+    width: i32,
+    height: i32,
+    componenets: i32,
+    opengl_load_type: u32,
+    data: *mut u8,
+}
+
+impl Image {
+    pub fn new(name: String) -> Image {
+        let mut image: Image = Image { width: 0, height: 0, componenets: 0, opengl_load_type: gl::RGB, data: 0 as *mut u8 };
+
+        // Load file into memory
+        let mut f = File::open(format!("resources/textures/{}.png", name)).expect("file not found");
+        let mut contents = vec![];
+        f.read_to_end(&mut contents).expect("Failed to put data into Vec<u8> in texture!");
+
+        unsafe {
+            // load image, create texture and generate mipmaps
+            stb_image_rust::stbi_set_flip_vertically_on_load(true as i32);
+            image.data = stb_image_rust::stbi_load_from_memory(
+                contents.as_mut_ptr(),
+                contents.len() as i32,
+                &mut image.width,
+                &mut image.height,
+                &mut image.componenets,
+                0,
+            );
+        }
+        image.opengl_load_type = match image.componenets {
+            3 => gl::RGB,
+            4 => gl::RGBA,
+            _ => gl::RGB
+        };
+        return image;
+    }
+}
+
+impl Drop for Image {
+    fn drop(&mut self) {
+        unsafe {
+            stb_image_rust::c_runtime::free(self.data);
         }
     }
 }
