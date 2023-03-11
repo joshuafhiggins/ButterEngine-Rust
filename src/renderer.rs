@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use gl::types::*;
 use std::ptr;
 use std::mem;
