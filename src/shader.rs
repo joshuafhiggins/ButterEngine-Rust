@@ -84,27 +84,180 @@ impl Shader {
         }
     }
 
-    pub fn set_uniform_4f32(&self, label: String, vec4f: Vector4<f32>) {
+    //Bools
+    pub fn set_uniform_bool(&self, label: String, value: &bool) {
         let c_label = CString::new(label).unwrap();
         unsafe {
             let location = gl::GetUniformLocation(self.program, c_label.as_ptr());
-            gl::Uniform4f(location, vec4f.x, vec4f.y, vec4f.z, vec4f.w);
+            gl::Uniform1i(location, *value as i32);
         }
     }
 
-    pub fn set_uniform_3f32(&self, label: String, vec3f: Vector3<f32>) {
+    //Floats
+    pub fn set_uniform_4f(&self, label: String, value: &Vector4<f32>) {
         let c_label = CString::new(label).unwrap();
         unsafe {
             let location = gl::GetUniformLocation(self.program, c_label.as_ptr());
-            gl::Uniform3f(location, vec3f.x, vec3f.y, vec3f.z);
+            gl::Uniform4f(location, value.x, value.y, value.z, value.w);
+        }
+    }
+    pub fn set_uniform_3f(&self, label: String, value: &Vector3<f32>) {
+        let c_label = CString::new(label).unwrap();
+        unsafe {
+            let location = gl::GetUniformLocation(self.program, c_label.as_ptr());
+            gl::Uniform3f(location, value.x, value.y, value.z);
+        }
+    }
+    pub fn set_uniform_2f(&self, label: String, value: &Vector2<f32>) {
+        let c_label = CString::new(label).unwrap();
+        unsafe {
+            let location = gl::GetUniformLocation(self.program, c_label.as_ptr());
+            gl::Uniform2f(location, value.x, value.y);
+        }
+    }
+    pub fn set_uniform_1f(&self, label: String, value: &f32) {
+        let c_label = CString::new(label).unwrap();
+        unsafe {
+            let location = gl::GetUniformLocation(self.program, c_label.as_ptr());
+            gl::Uniform1f(location, *value);
         }
     }
 
-    pub fn set_uniform_2f32(&self, label: String, vec2f: Vector2<f32>) {
+    //Signed Integers
+    pub fn set_uniform_4i(&self, label: String, value: &Vector4<i32>) {
         let c_label = CString::new(label).unwrap();
         unsafe {
             let location = gl::GetUniformLocation(self.program, c_label.as_ptr());
-            gl::Uniform2f(location, vec2f.x, vec2f.y);
+            gl::Uniform4i(location, value.x, value.y, value.z, value.w);
         }
     }
+    pub fn set_uniform_3i(&self, label: String, value: &Vector3<i32>) {
+        let c_label = CString::new(label).unwrap();
+        unsafe {
+            let location = gl::GetUniformLocation(self.program, c_label.as_ptr());
+            gl::Uniform3i(location, value.x, value.y, value.z);
+        }
+    }
+    pub fn set_uniform_2i(&self, label: String, value: &Vector2<i32>) {
+        let c_label = CString::new(label).unwrap();
+        unsafe {
+            let location = gl::GetUniformLocation(self.program, c_label.as_ptr());
+            gl::Uniform2i(location, value.x, value.y);
+        }
+    }
+    pub fn set_uniform_i32(&self, label: String, value: &i32) {
+        let c_label = CString::new(label).unwrap();
+        unsafe {
+            let location = gl::GetUniformLocation(self.program, c_label.as_ptr());
+            gl::Uniform1i(location, *value);
+        }
+    }
+
+    //Unsigned Integers
+    pub fn set_uniform_4ui(&self, label: String, value: &Vector4<u32>) {
+        let c_label = CString::new(label).unwrap();
+        unsafe {
+            let location = gl::GetUniformLocation(self.program, c_label.as_ptr());
+            gl::Uniform4ui(location, value.x, value.y, value.z, value.w);
+        }
+    }
+    pub fn set_uniform_3ui(&self, label: String, value: &Vector3<u32>) {
+        let c_label = CString::new(label).unwrap();
+        unsafe {
+            let location = gl::GetUniformLocation(self.program, c_label.as_ptr());
+            gl::Uniform3ui(location, value.x, value.y, value.z);
+        }
+    }
+    pub fn set_uniform_2ui(&self, label: String, value: &Vector2<u32>) {
+        let c_label = CString::new(label).unwrap();
+        unsafe {
+            let location = gl::GetUniformLocation(self.program, c_label.as_ptr());
+            gl::Uniform2ui(location, value.x, value.y);
+        }
+    }
+    pub fn set_uniform_u32(&self, label: String, value: &u32) {
+        let c_label = CString::new(label).unwrap();
+        unsafe {
+            let location = gl::GetUniformLocation(self.program, c_label.as_ptr());
+            gl::Uniform1ui(location, *value);
+        }
+    }
+
+    //Doubles
+    pub fn set_uniform_4d(&self, label: String, value: &Vector4<f64>) {
+        let c_label = CString::new(label).unwrap();
+        unsafe {
+            let location = gl::GetUniformLocation(self.program, c_label.as_ptr());
+            gl::Uniform4d(location, value.x, value.y, value.z, value.w);
+        }
+    }
+    pub fn set_uniform_3d(&self, label: String, value: &Vector3<f64>) {
+        let c_label = CString::new(label).unwrap();
+        unsafe {
+            let location = gl::GetUniformLocation(self.program, c_label.as_ptr());
+            gl::Uniform3d(location, value.x, value.y, value.z);
+        }
+    }
+    pub fn set_uniform_2d(&self, label: String, value: &Vector2<f64>) {
+        let c_label = CString::new(label).unwrap();
+        unsafe {
+            let location = gl::GetUniformLocation(self.program, c_label.as_ptr());
+            gl::Uniform2d(location, value.x, value.y);
+        }
+    }
+    pub fn set_uniform_d64(&self, label: String, value: &f64) {
+        let c_label = CString::new(label).unwrap();
+        unsafe {
+            let location = gl::GetUniformLocation(self.program, c_label.as_ptr());
+            gl::Uniform1d(location, *value);
+        }
+    }
+
+    //Matrices Floats
+    pub fn set_uniform_2x2f(&self, label: String, count: Option<i32>, value: &Matrix2<f32>) {
+        let c_label = CString::new(label).unwrap();
+        unsafe {
+            let location = gl::GetUniformLocation(self.program, c_label.as_ptr());
+            gl::UniformMatrix2fv(location, count.unwrap_or(1), gl::FALSE, value.as_ptr());
+        }
+    }
+    pub fn set_uniform_3x3f(&self, label: String, count: Option<i32>, value: &Matrix3<f32>) {
+        let c_label = CString::new(label).unwrap();
+        unsafe {
+            let location = gl::GetUniformLocation(self.program, c_label.as_ptr());
+            gl::UniformMatrix3fv(location, count.unwrap_or(1), gl::FALSE, value.as_ptr());
+        }
+    }
+    pub fn set_uniform_4x4f(&self, label: String, count: Option<i32>, value: &Matrix4<f32>) {
+        let c_label = CString::new(label).unwrap();
+        unsafe {
+            let location = gl::GetUniformLocation(self.program, c_label.as_ptr());
+            gl::UniformMatrix4fv(location, count.unwrap_or(1), gl::FALSE, value.as_ptr());
+        }
+    }
+
+    //Matrices Doubles
+    pub fn set_uniform_2x2d(&self, label: String, count: Option<i32>, value: &Matrix2<f64>) {
+        let c_label = CString::new(label).unwrap();
+        unsafe {
+            let location = gl::GetUniformLocation(self.program, c_label.as_ptr());
+            gl::UniformMatrix2dv(location, count.unwrap_or(1), gl::FALSE, value.as_ptr());
+        }
+    }
+    pub fn set_uniform_3x3d(&self, label: String, count: Option<i32>, value: &Matrix3<f64>) {
+        let c_label = CString::new(label).unwrap();
+        unsafe {
+            let location = gl::GetUniformLocation(self.program, c_label.as_ptr());
+            gl::UniformMatrix3dv(location, count.unwrap_or(1), gl::FALSE, value.as_ptr());
+        }
+    }
+    pub fn set_uniform_4x4d(&self, label: String, count: Option<i32>, value: &Matrix4<f64>) {
+        let c_label = CString::new(label).unwrap();
+        unsafe {
+            let location = gl::GetUniformLocation(self.program, c_label.as_ptr());
+            gl::UniformMatrix4dv(location, count.unwrap_or(1), gl::FALSE, value.as_ptr());
+        }
+    }
+
+    //TODO: Direct State Access
 }
