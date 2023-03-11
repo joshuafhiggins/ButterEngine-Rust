@@ -91,13 +91,5 @@ fn main() {
         window.poll_events();
     }
 
-    vbo.cleanup();
-    tbo.cleanup();
-    cbo.cleanup();
-    ibo.cleanup();
-    vao.cleanup();
-    shader.cleanup();
-    texture.cleanup();
-
     settings::save(settings).expect("Unable to save settings!");
 }

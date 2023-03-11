@@ -31,14 +31,15 @@ impl GPUObject for VAO {
             gl::BindVertexArray(0);
         }
     }
+}
 
-    fn cleanup(&self) {
+impl Drop for VAO {
+    fn drop(&mut self) {
         unsafe {
             gl::DeleteVertexArrays(1, &self.id);
         }
     }
 }
-
 pub struct VBO {
     id: u32,
     data: Vec<f32>,
@@ -94,8 +95,10 @@ impl GPUObject for VBO {
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
         }
     }
+}
 
-    fn cleanup(&self) {
+impl Drop for VBO {
+    fn drop(&mut self) {
         unsafe {
             gl::DeleteBuffers(1, &self.id);
         }
@@ -146,8 +149,10 @@ impl GPUObject for IBO {
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
         }
     }
+}
 
-    fn cleanup(&self) {
+impl Drop for IBO {
+    fn drop(&mut self) {
         unsafe {
             gl::DeleteBuffers(1, &self.id);
         }
@@ -157,7 +162,6 @@ impl GPUObject for IBO {
 pub trait GPUObject {
     fn bind(&self);
     fn unbind(&self);
-    fn cleanup(&self);
 }
 
 pub fn toggle_wireframe(is_wireframe: &mut bool) {

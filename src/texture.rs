@@ -54,8 +54,10 @@ impl renderer::GPUObject for Texture {
             gl::BindTexture(gl::TEXTURE_2D, 0);
         }
     }
+}
 
-    fn cleanup(&self) {
+impl Drop for Texture {
+    fn drop(&mut self) {
         unsafe {
             gl::DeleteTextures(1, &self.handle);
         }

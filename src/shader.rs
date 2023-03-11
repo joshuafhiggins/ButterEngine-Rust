@@ -27,8 +27,10 @@ impl renderer::GPUObject for Shader {
             gl::UseProgram(0);
         }
     }
+}
 
-    fn cleanup(&self) {
+impl Drop for Shader {
+    fn drop(&mut self) {
         unsafe {
             gl::DeleteProgram(self.program);
         }
