@@ -95,6 +95,7 @@ impl Image {
             3 => gl::RGB,
             4 => gl::RGBA,
             _ => gl::RGB
+            //TODO: Normal types
         };
         return image;
     }
