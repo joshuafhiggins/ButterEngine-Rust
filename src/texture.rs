@@ -36,23 +36,30 @@ impl Texture {
 
         unsafe {
             // load image, create texture and generate mipmaps
+            stb_image_rust::stbi_set_flip_vertically_on_load(true as i32);
             img = stb_image_rust::stbi_load_from_memory(
                 contents.as_mut_ptr(),
                 contents.len() as i32,
                 &mut width,
                 &mut height,
                 &mut comp,
-                stb_image_rust::STBI_rgb_alpha,
+                0,
             );
+            
+            let image_load_type = match comp {
+                3 => gl::RGB,
+                4 => gl::RGBA,
+                _ => gl::RGB
+            };
 
             gl::TexImage2D(
                 gl::TEXTURE_2D,
                 0,
-                gl::RGBA as i32,
+                comp,
                 width,
                 height,
                 0,
-                gl::RGBA,
+                image_load_type,
                 gl::UNSIGNED_BYTE,
                 img as *const u8 as *const c_void,
             );
