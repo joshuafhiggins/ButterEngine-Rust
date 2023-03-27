@@ -129,9 +129,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "919ebc7bdbf60a529689a5e58f80d9dcde27e3d2ab4f2f7ce711ec439fe789c5"
 dependencies = [
  "bitflags",
+ "glfw-sys",
  "objc",
  "raw-window-handle",
  "winapi",
+]
+
+[[package]]
+name = "glfw-sys"
+version = "4.0.0+3.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5abed6d39a50226676aab893d6b4ad154da7e93fcdfed90d7696758a1b477ed1"
+dependencies = [
+ "cmake",
 ]
 
 [[package]]

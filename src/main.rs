@@ -59,7 +59,7 @@ fn main() {
     let cbo: VBO = VBO::new(colors.to_vec(), 1, 3, &vao);
     let tbo: VBO = VBO::new(texture_coords.to_vec(), 2, 2, &vao);
     let ibo: IBO = IBO::new(indices.to_vec(), &vao);
-    let texture: Texture = Texture::new("planks_oak".to_string());
+    let texture: Texture = Texture::new("planks_oak".to_string(), gl::NEAREST);
 
     while !window.should_close() {
         //TODO: Render

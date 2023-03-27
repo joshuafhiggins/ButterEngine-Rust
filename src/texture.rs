@@ -7,7 +7,7 @@ pub struct Texture {
 }
 
 impl Texture {
-    pub fn new(name: String) -> Texture {
+    pub fn new(name: String, filter: u32) -> Texture {
         let mut texture: Texture = Texture { handle: 0 };
         let image: Image = Image::new(name.clone());
 
@@ -20,8 +20,8 @@ impl Texture {
             gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32); // set texture wrapping to gl::REPEAT (default wrapping method)
             gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
             // set texture filtering parameters
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, filter as i32);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, filter as i32);
  
             gl::TexImage2D(
                 gl::TEXTURE_2D,
@@ -94,10 +94,11 @@ impl Image {
             );
         }
         image.opengl_load_type = match image.componenets {
+            1 => gl::RED,
+            2 => gl::RG,
             3 => gl::RGB,
             4 => gl::RGBA,
             _ => gl::RGB
-            //TODO: Normal types
         };
         return image;
     }
