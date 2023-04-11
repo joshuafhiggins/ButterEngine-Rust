@@ -3,6 +3,8 @@ mod settings;
 mod shader;
 mod texture;
 mod window;
+mod components;
+mod entities;
 
 use renderer::GPUObject;
 use renderer::IBO;
@@ -13,6 +15,7 @@ use shader::Shader;
 use std::ptr;
 use texture::Texture;
 use window::Window;
+use bevy_ecs::world::World;
 
 fn main() {
     let mut settings: Settings = settings::load();
@@ -60,6 +63,8 @@ fn main() {
     let tbo: VBO = VBO::new(texture_coords.to_vec(), 2, 2, &vao);
     let ibo: IBO = IBO::new(indices.to_vec(), &vao);
     let texture: Texture = Texture::new("planks_oak".to_string(), gl::NEAREST);
+
+    let world = World::default();
 
     while !window.should_close() {
         //TODO: Render
