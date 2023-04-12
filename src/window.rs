@@ -42,6 +42,10 @@ impl Window {
     }
 
     pub fn update(&mut self, world: &mut World) {
+        let mut input = world.get_resource_mut::<Input<glfw::Key>>().unwrap();
+        //Must come before our input.dispatch()
+        input.update();
+
         self.glfw.poll_events();
 
         for (_, event) in glfw::flush_messages(&self.events) {
@@ -82,9 +86,6 @@ fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent, worl
             let mut input = world.get_resource_mut::<Input<glfw::Key>>().unwrap();
             input.dispatch(a, b);
         }
-        // glfw::WindowEvent::Key(glfw::Key::F5, _, glfw::Action::Press, _) => {
-        //     crate::renderer::toggle_wireframe(&mut settings.is_wireframe);
-        // }
         _ => {}
     }
 }

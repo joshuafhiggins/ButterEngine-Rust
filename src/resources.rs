@@ -9,8 +9,9 @@ pub struct Input<T> {
 
 #[derive(PartialEq)]
 enum KeyState {
-    PRESSED,
-    RELEASED,
+    JustPressed,
+    Pressed,
+    Released,
 }
 
 impl Input<glfw::Key> {
@@ -22,32 +23,56 @@ impl Input<glfw::Key> {
         match action {
             glfw::Action::Release => {
                 if self.keys.contains_key(&key) {
-                    *self.keys.get_mut(&key).unwrap() = KeyState::RELEASED;
+                    let value = self.keys.get_mut(&key).unwrap();
+                    *value = KeyState::Released
                 } else {
-                    self.keys.insert(key, KeyState::RELEASED);
+                    self.keys.insert(key, KeyState::Released);
                 }
             },
             glfw::Action::Press => {
                 if self.keys.contains_key(&key) {
-                    *self.keys.get_mut(&key).unwrap() = KeyState::PRESSED;
+                    let value = self.keys.get_mut(&key).unwrap();
+                    match value {
+                        KeyState::JustPressed => *value = KeyState::Pressed, //THIS CASE NEVER HAPPENS, glfw only sends one pressed event
+                        KeyState::Pressed => {},
+                        KeyState::Released => *value = KeyState::JustPressed,
+                    }
                 } else {
-                    self.keys.insert(key, KeyState::PRESSED);
+                    self.keys.insert(key, KeyState::JustPressed);
                 }
             },
             _ => {},
         }
     }
 
+    //Call this before checking for new input events
+    pub fn update(&mut self) {
+        for (_, v) in &mut self.keys {
+            if *v == KeyState::JustPressed {
+                *v = KeyState::Pressed;
+            }
+        }
+    }
+
+    pub fn just_pressed(&self, key: glfw::Key) -> bool {
+        match self.keys.get(&key).unwrap_or(&KeyState::Released) {
+            KeyState::Pressed => false,
+            KeyState::JustPressed => true,
+            KeyState::Released => false,
+        }
+    }
     pub fn pressed(&self, key: glfw::Key) -> bool {
-        match self.keys.get(&key).unwrap_or(&KeyState::RELEASED) {
-            KeyState::PRESSED => true,
-            KeyState::RELEASED => false,
+        match self.keys.get(&key).unwrap_or(&KeyState::Released) {
+            KeyState::Pressed => true,
+            KeyState::JustPressed => false,
+            KeyState::Released => false,
         }
     }
     pub fn released(&self, key: glfw::Key) -> bool {
-        match self.keys.get(&key).unwrap_or(&KeyState::PRESSED) {
-            KeyState::RELEASED => true,
-            KeyState::PRESSED => false,
+        match self.keys.get(&key).unwrap_or(&KeyState::Released) {
+            KeyState::Released => true,
+            KeyState::JustPressed => false,
+            KeyState::Pressed => false,
         }
     }
 }

@@ -1,7 +1,8 @@
 use std::fs;
+use bevy_ecs::system::Resource;
 use serde::{Serialize, Deserialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Resource, Serialize, Deserialize)]
 pub struct Settings {
     pub width: u32,
     pub height: u32,
@@ -33,7 +34,7 @@ pub fn load() -> Settings {
     }
 }
 
-pub fn save(settings: Settings) -> Result<Settings, String> {
+pub fn save(settings: &Settings) -> Result<&Settings, String> {
     match fs::write(SETTINGS_LOCATION, toml::to_string(&settings).expect("Failed to serialize settings!")) {
         Ok(_) => Ok(settings),
         Err(_) => Err("Failed to save settings!".to_string()),

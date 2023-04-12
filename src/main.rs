@@ -75,8 +75,10 @@ fn main() {
     let texture: Texture = Texture::new("planks_oak".to_string(), gl::NEAREST);
 
     let mut world = World::new();
-    
+
     let mut pre_sys = Schedule::default();
+    let mut sys_gl = Schedule::default();
+    sys_gl.set_executor_kind(bevy_ecs::schedule::ExecutorKind::SingleThreaded);
     let mut sys = Schedule::default();
     let mut post_sys = Schedule::default();
 
@@ -88,13 +90,16 @@ fn main() {
     });
     world.insert_resource(Input::new());
     world.insert_resource(Time::default());
+    world.insert_resource(settings);
 
     sys.add_system(systems::move_camera);
+    sys_gl.add_system(systems::update_wireframe);
 
     while !window.should_close() {
         window.update(&mut world);
 
         pre_sys.run(&mut world);
+        sys_gl.run(&mut world);
         sys.run(&mut world);
 
         unsafe {
@@ -122,5 +127,5 @@ fn main() {
         window.swap_buffers();
     }
 
-    settings::save(settings).expect("Unable to save settings!");
+    settings::save(world.get_resource::<Settings>().unwrap()).expect("Unable to save settings!");
 }
