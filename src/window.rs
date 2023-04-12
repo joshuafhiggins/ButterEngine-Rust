@@ -2,7 +2,7 @@ use std::{sync::mpsc::Receiver, ffi::c_int};
 use bevy_ecs::prelude::*;
 use glfw::{Context, ffi};
 
-use crate::{settings::Settings, resources::Input};
+use crate::resources::*;
 
 pub struct Window {
     pub handle: glfw::Window,
@@ -41,14 +41,15 @@ impl Window {
         self.handle.swap_buffers();
     }
 
-    pub fn poll_events(&mut self) {
+    pub fn update(&mut self, world: &mut World) {
         self.glfw.poll_events();
-    }
 
-    pub fn process_events(&mut self, world: &mut World) {
         for (_, event) in glfw::flush_messages(&self.events) {
             handle_window_event(&mut self.handle, event, world);
         }
+
+        let mut time = world.get_resource_mut::<Time>().unwrap();
+        time.update(self.handle.glfw.get_time() as f32);
     }
 
     pub fn set_swap_interval(&mut self, interval: i32) {
@@ -78,7 +79,7 @@ fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent, worl
             window.set_should_close(true);
         }
         glfw::WindowEvent::Key(a, _, b, _) => {
-            let input = world.get_resource::<Input<glfw::Key>>().unwrap();
+            let mut input = world.get_resource_mut::<Input<glfw::Key>>().unwrap();
             input.dispatch(a, b);
         }
         // glfw::WindowEvent::Key(glfw::Key::F5, _, glfw::Action::Press, _) => {

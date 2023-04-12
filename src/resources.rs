@@ -18,7 +18,7 @@ impl Input<glfw::Key> {
         Input { keys: HashMap::new() }
     }
 
-    pub fn dispatch(mut self, key: glfw::Key, action: glfw::Action) {
+    pub fn dispatch(&mut self, key: glfw::Key, action: glfw::Action) {
         match action {
             glfw::Action::Release => {
                 if self.keys.contains_key(&key) {
@@ -49,5 +49,18 @@ impl Input<glfw::Key> {
             KeyState::RELEASED => true,
             KeyState::PRESSED => false,
         }
+    }
+}
+
+#[derive(Resource, Default)]
+pub struct Time {
+    pub delta_time: f32,
+    pub last_frame: f32,
+}
+
+impl Time {
+    pub fn update(&mut self, current_time: f32) {
+        self.delta_time = current_time - self.last_frame;
+        self.last_frame = current_time;  
     }
 }

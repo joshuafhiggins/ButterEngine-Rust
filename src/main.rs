@@ -6,7 +6,6 @@ mod window;
 mod components;
 mod entities;
 mod systems;
-mod input;
 mod resources;
 
 use bevy_ecs::schedule::Schedule;
@@ -26,6 +25,7 @@ use texture::Texture;
 use window::Window;
 use bevy_ecs::world::World;
 use entities::*;
+use resources::*;
 
 fn main() {
     let mut settings: Settings = settings::load();
@@ -75,6 +75,7 @@ fn main() {
     let texture: Texture = Texture::new("planks_oak".to_string(), gl::NEAREST);
 
     let mut world = World::new();
+    
     let mut pre_sys = Schedule::default();
     let mut sys = Schedule::default();
     let mut post_sys = Schedule::default();
@@ -86,15 +87,12 @@ fn main() {
         camera: Camera {front: Vec3::new(0.0, 0.0, -1.0), up: Vec3::new(0.0, 1.0, 0.0) }
     });
     world.insert_resource(Input::new());
+    world.insert_resource(Time::default());
 
     sys.add_system(systems::move_camera);
 
     while !window.should_close() {
-        //TODO: Render
-        //TODO: ecs/physics/sound/ui/engine updates
-
-        window.poll_events();
-        window.process_events(&mut world);
+        window.update(&mut world);
 
         pre_sys.run(&mut world);
         sys.run(&mut world);
