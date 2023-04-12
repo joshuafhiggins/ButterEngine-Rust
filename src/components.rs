@@ -5,13 +5,13 @@ use glam::Vec3;
 pub struct Position { pub d: Vec3 }
 
 #[derive(Default, Component)]
-pub struct Rotation { d: Vec3 }
+pub struct Rotation { pub d: Vec3 }
 
 #[derive(Default, Component)]
-pub struct Scale { d: Vec3 }
+pub struct Scale { pub d: Vec3 }
 
 #[derive(Default, Component)]
 pub struct Camera { 
-    front: Vec3,
-    up: Vec3,
+    pub front: Vec3,
+    pub up: Vec3,
 }

@@ -5,17 +5,27 @@ mod texture;
 mod window;
 mod components;
 mod entities;
+mod systems;
+mod input;
+mod resources;
 
+use bevy_ecs::schedule::Schedule;
+use components::Camera;
+use components::Position;
+use components::Rotation;
+use glam::Vec3;
 use renderer::GPUObject;
 use renderer::IBO;
 use renderer::VAO;
 use renderer::VBO;
+use resources::Input;
 use settings::Settings;
 use shader::Shader;
 use std::ptr;
 use texture::Texture;
 use window::Window;
 use bevy_ecs::world::World;
+use entities::*;
 
 fn main() {
     let mut settings: Settings = settings::load();
@@ -64,13 +74,30 @@ fn main() {
     let ibo: IBO = IBO::new(indices.to_vec(), &vao);
     let texture: Texture = Texture::new("planks_oak".to_string(), gl::NEAREST);
 
-    let world = World::default();
+    let mut world = World::new();
+    let mut pre_sys = Schedule::default();
+    let mut sys = Schedule::default();
+    let mut post_sys = Schedule::default();
+
+
+    world.spawn(CameraBundle {
+        position: Position { d: Vec3::new(0.0, 0.0, 3.0) },
+        direction: Rotation::default(),
+        camera: Camera {front: Vec3::new(0.0, 0.0, -1.0), up: Vec3::new(0.0, 1.0, 0.0) }
+    });
+    world.insert_resource(Input::new());
+
+    sys.add_system(systems::move_camera);
 
     while !window.should_close() {
         //TODO: Render
         //TODO: ecs/physics/sound/ui/engine updates
 
-        window.process_events(&mut settings);
+        window.poll_events();
+        window.process_events(&mut world);
+
+        pre_sys.run(&mut world);
+        sys.run(&mut world);
 
         unsafe {
             gl::Clear(gl::COLOR_BUFFER_BIT);
@@ -92,8 +119,9 @@ fn main() {
         texture.unbind();
         shader.unbind();
 
+        post_sys.run(&mut world);
+
         window.swap_buffers();
-        window.poll_events();
     }
 
     settings::save(settings).expect("Unable to save settings!");

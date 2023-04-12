@@ -1,7 +1,8 @@
 use std::{sync::mpsc::Receiver, ffi::c_int};
+use bevy_ecs::prelude::*;
 use glfw::{Context, ffi};
 
-use crate::settings::Settings;
+use crate::{settings::Settings, resources::Input};
 
 pub struct Window {
     pub handle: glfw::Window,
@@ -44,9 +45,9 @@ impl Window {
         self.glfw.poll_events();
     }
 
-    pub fn process_events(&mut self, settings: &mut Settings) {
+    pub fn process_events(&mut self, world: &mut World) {
         for (_, event) in glfw::flush_messages(&self.events) {
-            handle_window_event(&mut self.handle, event, settings);
+            handle_window_event(&mut self.handle, event, world);
         }
     }
 
@@ -70,15 +71,19 @@ impl Window {
  
 }
 
-fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent, settings: &mut Settings) {
+fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent, world: &mut World) {
     //TODO: Handle all events
     match event {
         glfw::WindowEvent::Key(glfw::Key::Escape, _, glfw::Action::Press, _) => {
             window.set_should_close(true);
         }
-        glfw::WindowEvent::Key(glfw::Key::F5, _, glfw::Action::Press, _) => {
-            crate::renderer::toggle_wireframe(&mut settings.is_wireframe);
+        glfw::WindowEvent::Key(a, _, b, _) => {
+            let input = world.get_resource::<Input<glfw::Key>>().unwrap();
+            input.dispatch(a, b);
         }
+        // glfw::WindowEvent::Key(glfw::Key::F5, _, glfw::Action::Press, _) => {
+        //     crate::renderer::toggle_wireframe(&mut settings.is_wireframe);
+        // }
         _ => {}
     }
 }
