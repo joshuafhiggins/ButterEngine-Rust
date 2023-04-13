@@ -43,8 +43,7 @@ impl Window {
 
     pub fn update(&mut self, world: &mut World) {
         let mut input = world.get_resource_mut::<Input<glfw::Key>>().unwrap();
-        //Must come before our input.dispatch()
-        input.update();
+        input.update(); //Must come before our input.dispatch()
 
         self.glfw.poll_events();
 
@@ -66,6 +65,7 @@ impl Window {
         gl::load_with(|s| self.handle.get_proc_address(s) as * const _);
         unsafe {
             gl::ClearColor(0.2, 0.3, 0.3, 1.0);
+            gl::Enable(gl::DEPTH_TEST);
         }
         //TODO: More GL init please
     }
@@ -82,9 +82,31 @@ fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent, worl
         glfw::WindowEvent::Key(glfw::Key::Escape, _, glfw::Action::Press, _) => {
             window.set_should_close(true);
         }
+        glfw::WindowEvent::MouseButton(glfw::MouseButton::Button1, glfw::Action::Press, _) => {
+            let mut input = world.get_resource_mut::<Input<glfw::Key>>().unwrap();
+            window.set_cursor_mode(glfw::CursorMode::Disabled);
+            input.cursor_mode = glfw::CursorMode::Disabled;
+        }
+        glfw::WindowEvent::Key(glfw::Key::Space, _, glfw::Action::Press, _) => {
+            let mut input = world.get_resource_mut::<Input<glfw::Key>>().unwrap();
+            window.set_cursor_mode(glfw::CursorMode::Normal);
+            input.cursor_mode = glfw::CursorMode::Normal;
+        }
         glfw::WindowEvent::Key(a, _, b, _) => {
             let mut input = world.get_resource_mut::<Input<glfw::Key>>().unwrap();
-            input.dispatch(a, b);
+            input.dispatch_keyboard(a, b);
+        }
+        glfw::WindowEvent::CursorPos(a, b) => {
+            let mut input = world.get_resource_mut::<Input<glfw::Key>>().unwrap();
+            input.dispatch_mouse(a, b);
+        }
+        glfw::WindowEvent::Size(a, b) => {
+            let mut win_resource = world.get_resource_mut::<WindowResource>().unwrap();
+            win_resource.width = a;
+            win_resource.height = b;
+            unsafe {
+                gl::Viewport(0, 0, a, b);
+            }
         }
         _ => {}
     }

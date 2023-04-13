@@ -2,9 +2,15 @@ use std::collections::HashMap;
 
 use bevy_ecs::system::Resource;
 
-#[derive(Resource, Default)]
+//TODO: Fix accesses
+#[derive(Resource)]
 pub struct Input<T> {
-    keys: HashMap<T, KeyState>
+    keys: HashMap<T, KeyState>,
+    pub xpos: f64,
+    pub ypos: f64,
+    pub last_xpos: f64,
+    pub last_ypos: f64,
+    pub cursor_mode: glfw::CursorMode,
 }
 
 #[derive(PartialEq)]
@@ -16,10 +22,10 @@ enum KeyState {
 
 impl Input<glfw::Key> {
     pub fn new() -> Input<glfw::Key> {
-        Input { keys: HashMap::new() }
+        Input { keys: HashMap::new(), xpos: 0.0, ypos: 0.0, last_xpos: 0.0, last_ypos: 0.0, cursor_mode: glfw::CursorMode::Normal }
     }
 
-    pub fn dispatch(&mut self, key: glfw::Key, action: glfw::Action) {
+    pub fn dispatch_keyboard(&mut self, key: glfw::Key, action: glfw::Action) {
         match action {
             glfw::Action::Release => {
                 if self.keys.contains_key(&key) {
@@ -45,6 +51,11 @@ impl Input<glfw::Key> {
         }
     }
 
+    pub fn dispatch_mouse(&mut self, xpos: f64, ypos: f64) {
+        self.xpos = xpos;
+        self.ypos = ypos;
+    }
+
     //Call this before checking for new input events
     pub fn update(&mut self) {
         for (_, v) in &mut self.keys {
@@ -52,6 +63,9 @@ impl Input<glfw::Key> {
                 *v = KeyState::Pressed;
             }
         }
+
+        self.last_xpos = self.xpos;
+        self.last_ypos = self.ypos;
     }
 
     pub fn just_pressed(&self, key: glfw::Key) -> bool {
@@ -87,5 +101,17 @@ impl Time {
     pub fn update(&mut self, current_time: f32) {
         self.delta_time = current_time - self.last_frame;
         self.last_frame = current_time;  
+    }
+}
+
+#[derive(Resource)]
+pub struct WindowResource {
+    pub width: i32,
+    pub height: i32,
+}
+
+impl WindowResource {
+    pub fn new(width: i32, height: i32) -> Self {
+        WindowResource { width: width, height: height }
     }
 }

@@ -9,7 +9,8 @@ pub struct Settings {
     pub title: String,
     //TODO: Add fullscreen
     pub swap_interval: i32,
-    pub is_wireframe: bool
+    pub is_wireframe: bool,
+    pub fov: f32,
 }
 
 pub const SETTINGS_LOCATION: &str = "resources/settings.toml";
@@ -21,7 +22,8 @@ impl Default for Settings {
             height: 720,
             title: "Game - Butter Engine".to_string(),
             swap_interval: -1,
-            is_wireframe: false
+            is_wireframe: false,
+            fov: 90.0,
         }
     }
 }

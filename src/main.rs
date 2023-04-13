@@ -1,31 +1,25 @@
-mod renderer;
-mod settings;
-mod shader;
-mod texture;
-mod window;
 mod components;
 mod entities;
-mod systems;
+mod renderer;
 mod resources;
+mod settings;
+mod shader;
+mod systems;
+mod texture;
+mod window;
 
 use bevy_ecs::schedule::Schedule;
-use components::Camera;
-use components::Position;
-use components::Rotation;
-use glam::Vec3;
-use renderer::GPUObject;
-use renderer::IBO;
-use renderer::VAO;
-use renderer::VBO;
-use resources::Input;
+use bevy_ecs::world::World;
+use components::*;
+use entities::*;
+use glam::*;
+use renderer::*;
+use resources::*;
 use settings::Settings;
 use shader::Shader;
 use std::ptr;
 use texture::Texture;
 use window::Window;
-use bevy_ecs::world::World;
-use entities::*;
-use resources::*;
 
 fn main() {
     let mut settings: Settings = settings::load();
@@ -39,38 +33,42 @@ fn main() {
     window.init_gl();
     renderer::update_wireframe(&settings.is_wireframe);
 
-    let shader: Shader = Shader::new("triangle".to_string());
+    let shader: Shader = Shader::new("default".to_string());
 
-    let vertices: [f32; 12] = [
-            // positions
-             0.5,  0.5, 0.0, // top right
-             0.5, -0.5, 0.0, // bottom right
-            -0.5, -0.5, 0.0, // bottom left
-            -0.5,  0.5, 0.0, // top left
+    let vertices: [f32; 15] = [
+        -0.5, 0.0,  0.5,     	
+        -0.5, 0.0, -0.5,     	
+         0.5, 0.0, -0.5,     	
+         0.5, 0.0,  0.5,     	
+         0.0, 0.8,  0.0,     	
     ];
-    let colors: [f32; 12] = [
-        // texture coords
-        1.0, 0.0, 0.0, // top right
-        0.0, 1.0, 0.0, // bottom right
-        0.0, 0.0, 1.0, // bottom left
-        1.0, 1.0, 0.0 // top left
+    let colors: [f32; 15] = [
+        0.83, 0.70, 0.44,
+        0.83, 0.70, 0.44,
+        0.83, 0.70, 0.44,
+        0.83, 0.70, 0.44,
+        0.92, 0.86, 0.76,
     ];
-    let texture_coords: [f32; 8] = [
-        // texture coords
-        1.0, 1.0, // top right
-        1.0, 0.0, // bottom right
-        0.0, 0.0, // bottom left
-        0.0, 1.0  // top left
+    let texture_coords: [f32; 10] = [
+        0.0, 0.0,
+        5.0, 0.0,
+        0.0, 0.0,
+        5.0, 0.0,
+        2.5, 5.0,
     ];
     let indices = [
-        0, 1, 3, // first Triangle
-        1, 2, 3, // second Triangle
+        0, 1, 2,
+        0, 2, 3,
+        0, 1, 4,
+        1, 2, 4,
+        2, 3, 4,
+        3, 0, 4,
     ];
 
     let vao: VAO = VAO::new();
-    let vbo: VBO = VBO::new(vertices.to_vec(), 0, 3, &vao);
-    let cbo: VBO = VBO::new(colors.to_vec(), 1, 3, &vao);
-    let tbo: VBO = VBO::new(texture_coords.to_vec(), 2, 2, &vao);
+    let _: VBO = VBO::new(vertices.to_vec(), 0, 3, &vao);
+    let _: VBO = VBO::new(colors.to_vec(), 1, 3, &vao);
+    let _: VBO = VBO::new(texture_coords.to_vec(), 2, 2, &vao);
     let ibo: IBO = IBO::new(indices.to_vec(), &vao);
     let texture: Texture = Texture::new("planks_oak".to_string(), gl::NEAREST);
 
@@ -82,30 +80,48 @@ fn main() {
     let mut sys = Schedule::default();
     let mut post_sys = Schedule::default();
 
-
-    world.spawn(CameraBundle {
-        position: Position { d: Vec3::new(0.0, 0.0, 3.0) },
+    let camera = world.spawn(CameraBundle {
+        position: Position {
+            d: Vec3::new(0.0, 0.0, 3.0),
+        },
         direction: Rotation::default(),
-        camera: Camera {front: Vec3::new(0.0, 0.0, -1.0), up: Vec3::new(0.0, 1.0, 0.0) }
-    });
+        camera: Camera {
+            front: Vec3::new(0.0, 0.0, 0.0),
+            up: Vec3::new(0.0, 1.0, 0.0),
+            yaw: 0.0,
+            pitch: 0.0,
+            first_mouse: true,
+            view: Mat4::IDENTITY,
+            projection: Mat4::perspective_rh_gl(
+            90.0_f32.to_radians(), 
+            window.handle.get_framebuffer_size().0 as f32 / window.handle.get_framebuffer_size().1 as f32, 
+            0.01, 
+            100.0),
+        },
+    }).id();
+
     world.insert_resource(Input::new());
     world.insert_resource(Time::default());
     world.insert_resource(settings);
+    world.insert_resource(WindowResource::new(window.handle.get_framebuffer_size().0, window.handle.get_framebuffer_size().1));
 
     sys.add_system(systems::move_camera);
+    sys.add_system(systems::update_projection);
     sys_gl.add_system(systems::update_wireframe);
 
     while !window.should_close() {
-        window.update(&mut world);
-
         pre_sys.run(&mut world);
         sys_gl.run(&mut world);
         sys.run(&mut world);
 
         unsafe {
-            gl::Clear(gl::COLOR_BUFFER_BIT);
+            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
         shader.bind();
+
+        let camera_component = world.entity(camera).get::<Camera>().unwrap();
+        shader.set_uniform_4x4f("camMatrix".to_string(), None, &camera_component.get_calculation());
+
         texture.bind();
         vao.bind();
         unsafe {
@@ -124,6 +140,7 @@ fn main() {
 
         post_sys.run(&mut world);
 
+        window.update(&mut world);
         window.swap_buffers();
     }
 

@@ -12,6 +12,7 @@ bevy_ecs = "0.10.1"
 #alto = "3.0.4"
 stb_image_rust = "2.27.2"
 glam = "0.23.0"
+libm = "0.2.6"
 serde = { version = "1.0.152", features = ["derive"] }
 toml = "0.7.2"
 
