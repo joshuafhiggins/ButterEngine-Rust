@@ -7,17 +7,18 @@ mod shader;
 mod systems;
 mod texture;
 mod window;
+mod mesh;
 
 use bevy_ecs::schedule::Schedule;
 use bevy_ecs::world::World;
 use components::*;
 use entities::*;
 use glam::*;
+use mesh::Mesh;
 use renderer::*;
 use resources::*;
 use settings::Settings;
 use shader::Shader;
-use std::ptr;
 use texture::Texture;
 use window::Window;
 
@@ -65,20 +66,22 @@ fn main() {
         3, 0, 4,
     ];
 
-    let vao: VAO = VAO::new();
-    let _: VBO = VBO::new(vertices.to_vec(), 0, 3, &vao);
-    let _: VBO = VBO::new(colors.to_vec(), 1, 3, &vao);
-    let _: VBO = VBO::new(texture_coords.to_vec(), 2, 2, &vao);
-    let ibo: IBO = IBO::new(indices.to_vec(), &vao);
+    let mut mesh: Mesh = Mesh::new(indices.to_vec(), &shader);
+    mesh.add_buffer(vertices.to_vec(), 0, 3);
+    mesh.add_buffer(colors.to_vec(), 1, 3);
+    mesh.add_buffer(texture_coords.to_vec(), 2, 2);
+
     let texture: Texture = Texture::new("planks_oak".to_string(), gl::NEAREST);
 
     let mut world = World::new();
 
-    let mut pre_sys = Schedule::default();
-    let mut sys_gl = Schedule::default();
-    sys_gl.set_executor_kind(bevy_ecs::schedule::ExecutorKind::SingleThreaded);
-    let mut sys = Schedule::default();
-    let mut post_sys = Schedule::default();
+    let mut preupdate_sys = Schedule::default();
+    let mut gl_sys = Schedule::default();
+    gl_sys.set_executor_kind(bevy_ecs::schedule::ExecutorKind::SingleThreaded);
+    let mut update_sys = Schedule::default();
+    let mut render_sys = Schedule::default();
+    render_sys.set_executor_kind(bevy_ecs::schedule::ExecutorKind::SingleThreaded);
+    let mut postupdate_sys = Schedule::default();
 
     let camera = world.spawn(CameraBundle {
         position: Position {
@@ -105,40 +108,32 @@ fn main() {
     world.insert_resource(settings);
     world.insert_resource(WindowResource::new(window.handle.get_framebuffer_size().0, window.handle.get_framebuffer_size().1));
 
-    sys.add_system(systems::move_camera);
-    sys.add_system(systems::update_projection);
-    sys_gl.add_system(systems::update_wireframe);
+    update_sys.add_system(systems::move_camera);
+    update_sys.add_system(systems::update_projection);
+    gl_sys.add_system(systems::update_wireframe);
 
     while !window.should_close() {
-        pre_sys.run(&mut world);
-        sys_gl.run(&mut world);
-        sys.run(&mut world);
+        preupdate_sys.run(&mut world);
+        gl_sys.run(&mut world);
+        update_sys.run(&mut world);
 
         unsafe {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
+
+        render_sys.run(&mut world);
+
         shader.bind();
 
         let camera_component = world.entity(camera).get::<Camera>().unwrap();
         shader.set_uniform_4x4f("camMatrix".to_string(), None, &camera_component.get_calculation());
 
         texture.bind();
-        vao.bind();
-        unsafe {
-            // gl::DrawArrays(gl::TRIANGLES, 0, 3);
-            //TODO: Create a Mesh struct
-            gl::DrawElements(
-                gl::TRIANGLES,
-                ibo.get_indices().len() as i32,
-                gl::UNSIGNED_INT,
-                ptr::null(),
-            );
-        }
-        vao.unbind();
+        mesh.render();
         texture.unbind();
         shader.unbind();
 
-        post_sys.run(&mut world);
+        postupdate_sys.run(&mut world);
 
         window.update(&mut world);
         window.swap_buffers();
