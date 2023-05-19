@@ -15,11 +15,8 @@ use components::*;
 use entities::*;
 use glam::*;
 use mesh::Mesh;
-use renderer::*;
 use resources::*;
 use settings::Settings;
-use shader::Shader;
-use texture::Texture;
 use window::Window;
 
 fn main() {
@@ -33,8 +30,6 @@ fn main() {
     window.center();
     window.init_gl();
     renderer::update_wireframe(&settings.is_wireframe);
-
-    // let shader: Shader = Shader::new("default".to_string());
 
     let vertices: [f32; 15] = [
         -0.5, 0.0,  0.5,     	
@@ -79,8 +74,6 @@ fn main() {
     mesh.add_buffer(colors.to_vec(), 1, 3);
     mesh.add_buffer(texture_coords.to_vec(), 2, 2);
 
-    // let texture: Texture = Texture::new("planks_oak".to_string(), gl::NEAREST);
-
     let mut world = World::new();
 
     let mut preupdate_sys = Schedule::default();
@@ -91,7 +84,7 @@ fn main() {
     render_sys.set_executor_kind(bevy_ecs::schedule::ExecutorKind::SingleThreaded);
     let mut postupdate_sys = Schedule::default();
 
-    let camera = world.spawn(CameraBundle {
+    let _ = world.spawn(CameraBundle {
         position: Position {
             d: Vec3::new(0.0, 0.0, 3.0),
         },
@@ -110,6 +103,8 @@ fn main() {
             100.0),
         },
     }).id();
+
+    world.spawn(mesh);
 
     world.insert_resource(Input::new());
     world.insert_resource(Time::default());

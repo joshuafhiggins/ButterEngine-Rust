@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use bevy_ecs::system::Resource;
 
-use crate::{texture::Texture, shader::{Shader, self}};
+use crate::{texture::Texture, shader::{Shader}};
 
 //TODO: Fix accesses
 #[derive(Resource)]
@@ -149,5 +149,10 @@ impl AssetPool {
 
     pub fn get_shader(&self, name: &str) -> Option<&Shader> {
         self.shaders.get(name)
+    }
+
+    pub fn unload_all(&mut self) {
+        self.shaders.clear();
+        self.textures.clear();
     }
 }
