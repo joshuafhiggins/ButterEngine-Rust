@@ -66,6 +66,10 @@ fn main() {
         3, 0, 4,
     ];
 
+    let mut asset_pool = AssetPool::default();
+    asset_pool.load_shader("default".to_string());
+    asset_pool.load_texture("planks_oak".to_string());
+
     let mut mesh: Mesh = Mesh::new(
     indices.to_vec(), 
     "planks_oak".to_string(), 
@@ -111,7 +115,7 @@ fn main() {
     world.insert_resource(Time::default());
     world.insert_resource(settings);
     world.insert_resource(WindowResource::new(window.handle.get_framebuffer_size().0, window.handle.get_framebuffer_size().1));
-    world.insert_resource(AssetPool::default());
+    world.insert_resource(asset_pool);
 
     update_sys.add_system(systems::move_camera);
     update_sys.add_system(systems::update_projection);

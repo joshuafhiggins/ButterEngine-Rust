@@ -127,25 +127,27 @@ pub struct AssetPool {
 }
 
 impl AssetPool {
-    pub fn get_texture(&mut self, name: String) -> &Texture {
-        if self.textures.contains_key(&name) {
-            self.textures.get(&name).unwrap()
-        } else {
-            let texture = Texture::new(name.clone(), 0);
-            self.textures.insert(name.clone(), texture);
-            
-            self.textures.get(&name).unwrap()
-        }
+    pub fn load_texture(&mut self, name: String) {
+        self.textures.insert(name.clone(), Texture::new(name, gl::NEAREST));
     }
 
-    pub fn get_shader(&mut self, name: String) -> &Shader {
-        if self.shaders.contains_key(&name) {
-            self.shaders.get(&name).unwrap()
-        } else {
-            let shader = Shader::new(name.clone());
-            self.shaders.insert(name.clone(), shader);
-            
-            self.shaders.get(&name).unwrap()
-        }
+    pub fn unload_texture(&mut self, name: &str) {
+        self.textures.remove(name);
+    }
+
+    pub fn get_texture(&self, name: &str) -> Option<&Texture> {
+        self.textures.get(name)
+    }
+
+    pub fn load_shader(&mut self, name: String) {
+        self.shaders.insert(name.clone(), Shader::new(name));
+    }
+
+    pub fn unload_shader(&mut self, name: &str) {
+        self.shaders.remove(name);
+    }
+
+    pub fn get_shader(&self, name: &str) -> Option<&Shader> {
+        self.shaders.get(name)
     }
 }
