@@ -2,6 +2,8 @@ use std::collections::HashMap;
 
 use bevy_ecs::system::Resource;
 
+use crate::{texture::Texture, shader::{Shader, self}};
+
 //TODO: Fix accesses
 #[derive(Resource)]
 pub struct Input<T> {
@@ -113,5 +115,37 @@ pub struct WindowResource {
 impl WindowResource {
     pub fn new(width: i32, height: i32) -> Self {
         WindowResource { width: width, height: height }
+    }
+}
+
+//TODO: Materials, Models
+//TODO: Convert get_texture to material
+#[derive(Resource, Default)]
+pub struct AssetPool {
+    textures: HashMap<String, Texture>,
+    shaders: HashMap<String, Shader>,
+}
+
+impl AssetPool {
+    pub fn get_texture(&mut self, name: String) -> &Texture {
+        if self.textures.contains_key(&name) {
+            self.textures.get(&name).unwrap()
+        } else {
+            let texture = Texture::new(name.clone(), 0);
+            self.textures.insert(name.clone(), texture);
+            
+            self.textures.get(&name).unwrap()
+        }
+    }
+
+    pub fn get_shader(&mut self, name: String) -> &Shader {
+        if self.shaders.contains_key(&name) {
+            self.shaders.get(&name).unwrap()
+        } else {
+            let shader = Shader::new(name.clone());
+            self.shaders.insert(name.clone(), shader);
+            
+            self.shaders.get(&name).unwrap()
+        }
     }
 }

@@ -34,7 +34,7 @@ fn main() {
     window.init_gl();
     renderer::update_wireframe(&settings.is_wireframe);
 
-    let shader: Shader = Shader::new("default".to_string());
+    // let shader: Shader = Shader::new("default".to_string());
 
     let vertices: [f32; 15] = [
         -0.5, 0.0,  0.5,     	
@@ -66,12 +66,16 @@ fn main() {
         3, 0, 4,
     ];
 
-    let mut mesh: Mesh = Mesh::new(indices.to_vec(), &shader);
+    let mut mesh: Mesh = Mesh::new(
+    indices.to_vec(), 
+    "planks_oak".to_string(), 
+    "default".to_string());
+    
     mesh.add_buffer(vertices.to_vec(), 0, 3);
     mesh.add_buffer(colors.to_vec(), 1, 3);
     mesh.add_buffer(texture_coords.to_vec(), 2, 2);
 
-    let texture: Texture = Texture::new("planks_oak".to_string(), gl::NEAREST);
+    // let texture: Texture = Texture::new("planks_oak".to_string(), gl::NEAREST);
 
     let mut world = World::new();
 
@@ -107,10 +111,12 @@ fn main() {
     world.insert_resource(Time::default());
     world.insert_resource(settings);
     world.insert_resource(WindowResource::new(window.handle.get_framebuffer_size().0, window.handle.get_framebuffer_size().1));
+    world.insert_resource(AssetPool::default());
 
     update_sys.add_system(systems::move_camera);
     update_sys.add_system(systems::update_projection);
     gl_sys.add_system(systems::update_wireframe);
+    render_sys.add_system(systems::render_scene);
 
     while !window.should_close() {
         preupdate_sys.run(&mut world);
@@ -122,16 +128,6 @@ fn main() {
         }
 
         render_sys.run(&mut world);
-
-        shader.bind();
-
-        let camera_component = world.entity(camera).get::<Camera>().unwrap();
-        shader.set_uniform_4x4f("camMatrix".to_string(), None, &camera_component.get_calculation());
-
-        texture.bind();
-        mesh.render();
-        texture.unbind();
-        shader.unbind();
 
         postupdate_sys.run(&mut world);
 

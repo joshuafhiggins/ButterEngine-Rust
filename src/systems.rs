@@ -1,4 +1,4 @@
-use crate::{components::*, resources::*, settings::Settings};
+use crate::{components::*, resources::*, settings::Settings, mesh::Mesh, renderer::GPUObject};
 use bevy_ecs::prelude::*;
 use glfw::Key;
 
@@ -71,5 +71,21 @@ pub fn update_projection(mut query: Query<&mut Camera>, window: Res<WindowResour
         for mut camera in &mut query {
             camera.set_projection(settings.fov, window.width as f32 / window.height as f32, 0.01, 100.0);
         }
+    }
+}
+
+pub fn render_scene(mut query: Query<(&Mesh, &Camera)>, mut assets: ResMut<AssetPool>) {
+    for (mesh, camera) in &mut query {
+        let shader = assets.get_shader(mesh.get_shader_name());
+        let texture = assets.get_texture(mesh.get_shader_name());
+
+        shader.bind();
+        shader.set_uniform_4x4f("camMatrix".to_string(), None, &camera.get_calculation());
+        texture.bind();
+
+        mesh.render();
+
+        texture.unbind();
+        shader.unbind();
     }
 }

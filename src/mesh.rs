@@ -1,22 +1,25 @@
 use std::ptr;
 
-use crate::{renderer::{VAO, VBO, IBO, GPUObject}, shader::Shader};
+use bevy_ecs::prelude::Component;
 
-pub struct Mesh<'a> {
+use crate::{renderer::{VAO, VBO, IBO, GPUObject}};
+
+#[derive(Component)]
+pub struct Mesh {
     vao: VAO,
     ibo: IBO,
     buffers: Vec<VBO>,
-    shader: &'a Shader,
-    //TODO: Make material struct that will have shader
-} //TODO: Make into component for ECS and render in a system
+    texture: String, //TODO: Change to material
+    shader: String,
+}
 
-impl Mesh<'_> {
-    pub fn new(indices: Vec<i32>, shader: &Shader) -> Mesh<'_> {
+impl Mesh {
+    pub fn new(indices: Vec<i32>, texture: String, shader: String) -> Mesh {
         let vao: VAO = VAO::new();
         let ibo: IBO = IBO::new(indices, &vao);
         let buffers: Vec<VBO> = Vec::new();
 
-        return Mesh { vao, ibo, buffers, shader };
+        return Mesh { vao, ibo, buffers, texture, shader};
     }
     pub fn add_buffer(&mut self, data: Vec<f32>, index: u32, size: i32) {
         self.buffers.push(VBO::new(data, index, size, &self.vao));
@@ -32,5 +35,11 @@ impl Mesh<'_> {
             );
         }
         self.vao.unbind();
+    }
+    pub fn get_texture_name(&self) -> String {
+        self.texture.clone()
+    }
+    pub fn get_shader_name(&self) -> String {
+        self.shader.clone()
     }
 }
