@@ -303,6 +303,4 @@ impl Shader {
             gl::UniformMatrix4dv(location, count.unwrap_or(1), gl::FALSE, value.as_ref() as *const f64);
         }
     }
-
-    //TODO: Direct State Access
 }

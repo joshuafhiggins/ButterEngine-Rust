@@ -17,7 +17,7 @@ impl Window {
             .expect("Failed to create GLFW window.");
         let mut our_window = Window { handle: window, glfw: glfw, events: events};
 
-        our_window.glfw.window_hint(glfw::WindowHint::ContextVersion(3, 3));
+        our_window.glfw.window_hint(glfw::WindowHint::ContextVersion(4, 6));
         our_window.glfw.window_hint(glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core));
         #[cfg(target_os = "macos")]
         our_window.glfw.window_hint(glfw::WindowHint::OpenGlForwardCompat(true));

@@ -6,12 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-gl = "0.14.0"
+gl = { path = "lib/gl" }
 bevy_ecs = "0.10.1"
 #nuklear-rust = "0.6.3"
 #alto = "3.0.4"
 stb_image_rust = "2.27.2"
-glam = "0.23.0"
+glam = "0.24.0"
 libm = "0.2.6"
 serde = { version = "1.0.152", features = ["derive"] }
 toml = "0.7.2"
