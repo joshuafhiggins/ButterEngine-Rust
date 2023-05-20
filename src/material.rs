@@ -17,10 +17,10 @@ impl Material {
             Err(_) => Material {name: name.to_string(), textures: Vec::new(), shader: String::new()},
         }
     }
-    pub fn save(&self) {
-        match fs::write(format!("resources/materials/{}.toml", self.name), toml::to_string(&self).expect("Failed to serialize settings!")) {
-            Ok(_) => Ok(self),
-            Err(_) => Err("Failed to save settings!"),
-        };
-    }
+    // pub fn save(&self) {
+    //     match fs::write(format!("resources/materials/{}.toml", self.name), toml::to_string(&self).expect("Failed to serialize settings!")) {
+    //         Ok(_) => Ok(self),
+    //         Err(_) => Err("Failed to save settings!"),
+    //     };
+    // } //TODO: Make a UI material editor
 }

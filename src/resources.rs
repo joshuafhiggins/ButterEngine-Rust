@@ -122,8 +122,8 @@ impl WindowResource {
 #[derive(Resource, Default)]
 pub struct AssetPool {
     materials: HashMap<String, Material>,
-    textures: HashMap<String, Texture>,
-    shaders: HashMap<String, Shader>,
+    textures: HashMap<String, (Texture, u32)>,
+    shaders: HashMap<String, (Shader, u32)>,
 }
 
 impl AssetPool {
@@ -138,7 +138,26 @@ impl AssetPool {
         }
     }
     pub fn unload_material(&mut self, name: &str) {
-        todo!(); //TODO
+        let material = self.materials.get(name)
+        .expect(format!("Material, {}, was never loaded", name).as_str());
+
+        let mut shader = self.shaders.get_mut(&material.shader)
+        .expect(format!("Shader, {}, was never loaded", material.shader).as_str());
+
+        shader.1 = shader.1 - 1;
+        if shader.1 == 0 {
+            self.shaders.remove(name);
+        }
+
+        for texture_name in &material.textures {
+            let mut texture = self.textures.get_mut(texture_name)
+            .expect(format!("Texture, {}, was never loaded", texture_name).as_str());
+
+            texture.1 = texture.1 - 1;
+            if texture.1 == 0 {
+                self.textures.remove(name);
+            }
+        }
     }
     pub fn get_material(&self, name: &str) -> Option<&Material> {
         self.materials.get(name)
@@ -146,25 +165,31 @@ impl AssetPool {
 
     pub fn load_texture(&mut self, name: &str) {
         if self.get_texture(&name).is_none() {
-            self.textures.insert(name.to_string(), Texture::new(name, gl::NEAREST));
+            self.textures.insert(name.to_string(), (Texture::new(name, gl::NEAREST), 1)); //TODO: materials should declare texture filtering
+        } else {
+            let mut tup = self.textures.get_mut(name).unwrap();
+            tup.1 = tup.1 + 1;
         }
     }
     pub fn unload_texture(&mut self, name: &str) {
         self.textures.remove(name);
     }
-    pub fn get_texture(&self, name: &str) -> Option<&Texture> {
+    pub fn get_texture(&self, name: &str) -> Option<&(Texture, u32)> {
         self.textures.get(name)
     }
 
     pub fn load_shader(&mut self, name: &str) {
         if self.get_material(&name).is_none() {
-            self.shaders.insert(name.to_string(), Shader::new(name));
+            self.shaders.insert(name.to_string(), (Shader::new(name), 1));
+        } else {
+            let mut tup = self.shaders.get_mut(name).unwrap();
+            tup.1 = tup.1 + 1;
         }
     }
     pub fn unload_shader(&mut self, name: &str) {
         self.shaders.remove(name);
     }
-    pub fn get_shader(&self, name: &str) -> Option<&Shader> {
+    pub fn get_shader(&self, name: &str) -> Option<&(Shader, u32)> {
         self.shaders.get(name)
     }
 

@@ -1,6 +1,3 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
-
 use glam::*;
 use gl::types::*;
 use std::ffi::CString;

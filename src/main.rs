@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 mod components;
 mod entities;
 mod renderer;
