@@ -11,6 +11,7 @@ pub struct Settings {
     pub swap_interval: i32,
     pub is_wireframe: bool,
     pub fov: f32,
+    pub aniso_level: f32,
 }
 
 pub const SETTINGS_LOCATION: &str = "resources/settings.toml";
@@ -24,6 +25,7 @@ impl Default for Settings {
             swap_interval: -1,
             is_wireframe: false,
             fov: 90.0,
+            aniso_level: 4.0,
         }
     }
 }

@@ -7,7 +7,7 @@ pub struct Texture {
 }
 
 impl Texture {
-    pub fn new(name: &str, filter: u32) -> Texture {
+    pub fn new(name: &str, mag_filter: u32, aniso_level: f32) -> Texture {
         let mut texture: Texture = Texture { handle: 0 };
         let image: Image = Image::new(&name);
 
@@ -20,8 +20,10 @@ impl Texture {
             gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32); // set texture wrapping to gl::REPEAT (default wrapping method)
             gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
             // set texture filtering parameters
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, filter as i32);
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, filter as i32);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR_MIPMAP_LINEAR as i32);
+            gl::TexParameterf(gl::TEXTURE_2D, gl::TEXTURE_MAX_ANISOTROPY_EXT, 16.0);
+
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, mag_filter as i32);
  
             gl::TexImage2D(
                 gl::TEXTURE_2D,
