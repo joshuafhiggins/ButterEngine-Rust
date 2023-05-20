@@ -8,6 +8,7 @@ mod systems;
 mod texture;
 mod window;
 mod mesh;
+mod material;
 
 use bevy_ecs::schedule::Schedule;
 use bevy_ecs::world::World;
@@ -62,13 +63,9 @@ fn main() {
     ];
 
     let mut asset_pool = AssetPool::default();
-    asset_pool.load_shader("default");
-    asset_pool.load_texture("planks_oak");
+    asset_pool.load_material("wood");
 
-    let mut mesh: Mesh = Mesh::new(
-    indices.to_vec(), 
-    "planks_oak", 
-    "default");
+    let mut mesh: Mesh = Mesh::new(indices.to_vec(), "wood");
     
     mesh.add_buffer(vertices.to_vec(), 0, 3);
     mesh.add_buffer(colors.to_vec(), 1, 3);

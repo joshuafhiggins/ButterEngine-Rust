@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use bevy_ecs::system::Resource;
 
-use crate::{texture::Texture, shader::Shader};
+use crate::{texture::Texture, shader::Shader, material::Material};
 
 //TODO: Fix accesses
 #[derive(Resource)]
@@ -118,41 +118,66 @@ impl WindowResource {
     }
 }
 
-//TODO: Materials, Models
-//TODO: Convert get_texture to material
+//TODO: Models
 #[derive(Resource, Default)]
 pub struct AssetPool {
+    materials: HashMap<String, Material>,
     textures: HashMap<String, Texture>,
     shaders: HashMap<String, Shader>,
 }
 
 impl AssetPool {
-    pub fn load_texture(&mut self, name: &str) {
-        self.textures.insert(name.to_string(), Texture::new(name, gl::NEAREST));
+    pub fn load_material(&mut self, name: &str) {
+        if self.get_material(&name).is_none() {
+            let material = Material::new(name);
+            for texture in &material.textures {
+                self.load_texture(&texture);
+            }
+            self.load_shader(&material.shader);
+            self.materials.insert(name.to_string(), material);
+        }
+    }
+    pub fn unload_material(&mut self, name: &str) {
+        todo!(); //TODO
+    }
+    pub fn get_material(&self, name: &str) -> Option<&Material> {
+        self.materials.get(name)
     }
 
+    pub fn load_texture(&mut self, name: &str) {
+        if self.get_texture(&name).is_none() {
+            self.textures.insert(name.to_string(), Texture::new(name, gl::NEAREST));
+        }
+    }
     pub fn unload_texture(&mut self, name: &str) {
         self.textures.remove(name);
     }
-
     pub fn get_texture(&self, name: &str) -> Option<&Texture> {
         self.textures.get(name)
     }
 
     pub fn load_shader(&mut self, name: &str) {
-        self.shaders.insert(name.to_string(), Shader::new(name));
+        if self.get_material(&name).is_none() {
+            self.shaders.insert(name.to_string(), Shader::new(name));
+        }
     }
-
     pub fn unload_shader(&mut self, name: &str) {
         self.shaders.remove(name);
     }
-
     pub fn get_shader(&self, name: &str) -> Option<&Shader> {
         self.shaders.get(name)
     }
 
     pub fn unload_all(&mut self) {
-        self.shaders.clear();
+        self.materials.clear();
+
+        for texture in &self.textures {
+            drop(texture.1);
+        }
         self.textures.clear();
+        for shader in &self.shaders {
+            drop(shader.1);
+        }
+        self.shaders.clear();
     }
 }
