@@ -11,7 +11,6 @@ use std::str;
 use crate::renderer;
 
 pub struct Shader {
-    name: String,
     program: u32,
 }
 
@@ -38,7 +37,7 @@ impl Drop for Shader {
 }
 
 impl Shader {
-    pub fn new(name: String) -> Shader {
+    pub fn new(name: &str) -> Shader {
         let vertex_src: String = fs::read_to_string(format!("resources/shaders/{}.vs", name))
             .expect(
                 format!(
@@ -129,13 +128,8 @@ impl Shader {
         };
 
         return Shader {
-            name: name,
             program: program,
         };
-    }
-
-    pub fn get_name(&self) -> &String {
-        return &self.name;
     }
 
     //Bools

@@ -36,9 +36,9 @@ pub fn load() -> Settings {
     }
 }
 
-pub fn save(settings: &Settings) -> Result<&Settings, String> {
+pub fn save(settings: &Settings) -> Result<&Settings, &str> {
     match fs::write(SETTINGS_LOCATION, toml::to_string(&settings).expect("Failed to serialize settings!")) {
         Ok(_) => Ok(settings),
-        Err(_) => Err("Failed to save settings!".to_string()),
+        Err(_) => Err("Failed to save settings!"),
     }
 }

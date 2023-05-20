@@ -7,9 +7,9 @@ pub struct Texture {
 }
 
 impl Texture {
-    pub fn new(name: String, filter: u32) -> Texture {
+    pub fn new(name: &str, filter: u32) -> Texture {
         let mut texture: Texture = Texture { handle: 0 };
-        let image: Image = Image::new(name.clone());
+        let image: Image = Image::new(&name);
 
         unsafe {
             gl::GenTextures(1, &mut texture.handle);
@@ -73,7 +73,7 @@ struct Image {
 }
 
 impl Image {
-    pub fn new(name: String) -> Image {
+    pub fn new(name: &str) -> Image {
         let mut image: Image = Image { width: 0, height: 0, componenets: 0, opengl_load_type: gl::RGB, data: 0 as *mut u8 };
 
         // Load file into memory

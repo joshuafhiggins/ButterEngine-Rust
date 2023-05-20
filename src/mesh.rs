@@ -9,17 +9,17 @@ pub struct Mesh {
     vao: VAO,
     ibo: IBO,
     buffers: Vec<VBO>,
-    texture: String, //TODO: Change to material
-    shader: String,
+    pub texture: String, //TODO: Change to material
+    pub shader: String,
 }
 
 impl Mesh {
-    pub fn new(indices: Vec<i32>, texture: String, shader: String) -> Mesh {
+    pub fn new(indices: Vec<i32>, texture: &str, shader: &str) -> Mesh {
         let vao: VAO = VAO::new();
         let ibo: IBO = IBO::new(indices, &vao);
         let buffers: Vec<VBO> = Vec::new();
 
-        return Mesh { vao, ibo, buffers, texture, shader};
+        return Mesh { vao, ibo, buffers, texture: texture.to_string(), shader: shader.to_string()};
     }
     pub fn add_buffer(&mut self, data: Vec<f32>, index: u32, size: i32) {
         self.buffers.push(VBO::new(data, index, size, &self.vao));
@@ -35,11 +35,5 @@ impl Mesh {
             );
         }
         self.vao.unbind();
-    }
-    pub fn get_texture_name(&self) -> String {
-        self.texture.clone()
-    }
-    pub fn get_shader_name(&self) -> String {
-        self.shader.clone()
     }
 }

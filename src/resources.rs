@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use bevy_ecs::system::Resource;
 
-use crate::{texture::Texture, shader::{Shader}};
+use crate::{texture::Texture, shader::Shader};
 
 //TODO: Fix accesses
 #[derive(Resource)]
@@ -127,8 +127,8 @@ pub struct AssetPool {
 }
 
 impl AssetPool {
-    pub fn load_texture(&mut self, name: String) {
-        self.textures.insert(name.clone(), Texture::new(name, gl::NEAREST));
+    pub fn load_texture(&mut self, name: &str) {
+        self.textures.insert(name.to_string(), Texture::new(name, gl::NEAREST));
     }
 
     pub fn unload_texture(&mut self, name: &str) {
@@ -139,8 +139,8 @@ impl AssetPool {
         self.textures.get(name)
     }
 
-    pub fn load_shader(&mut self, name: String) {
-        self.shaders.insert(name.clone(), Shader::new(name));
+    pub fn load_shader(&mut self, name: &str) {
+        self.shaders.insert(name.to_string(), Shader::new(name));
     }
 
     pub fn unload_shader(&mut self, name: &str) {

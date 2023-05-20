@@ -62,13 +62,13 @@ fn main() {
     ];
 
     let mut asset_pool = AssetPool::default();
-    asset_pool.load_shader("default".to_string());
-    asset_pool.load_texture("planks_oak".to_string());
+    asset_pool.load_shader("default");
+    asset_pool.load_texture("planks_oak");
 
     let mut mesh: Mesh = Mesh::new(
     indices.to_vec(), 
-    "planks_oak".to_string(), 
-    "default".to_string());
+    "planks_oak", 
+    "default");
     
     mesh.add_buffer(vertices.to_vec(), 0, 3);
     mesh.add_buffer(colors.to_vec(), 1, 3);

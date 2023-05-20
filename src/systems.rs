@@ -77,8 +77,8 @@ pub fn update_projection(mut query: Query<&mut Camera>, window: Res<WindowResour
 pub fn render_scene(mut query_mesh: Query<&Mesh>, mut query_camera: Query<&Camera>, assets: Res<AssetPool>) {
     for camera in &mut query_camera {
         for mesh in &mut query_mesh {
-            let shader = assets.get_shader(mesh.get_shader_name().as_str()).unwrap();
-            let texture = assets.get_texture(mesh.get_texture_name().as_str()).unwrap();
+            let shader = assets.get_shader(&mesh.shader).unwrap();
+            let texture = assets.get_texture(&mesh.texture).unwrap();
     
             shader.bind();
             shader.set_uniform_4x4f("camMatrix".to_string(), None, &camera.get_calculation());
