@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use bevy_ecs::system::Resource;
 
-use crate::{texture::Texture, shader::Shader, material::Material, settings::Settings};
+use crate::{texture::Texture, shader::Shader, material::{Material, to_gl_filter, MagnificationFilter}, settings::Settings};
 
 //TODO: Fix accesses
 #[derive(Resource)]
@@ -131,7 +131,7 @@ impl AssetPool {
         if self.get_material(&name).is_none() {
             let material = Material::new(name);
             for texture in &material.textures {
-                self.load_texture(&texture, settings.aniso_level);
+                self.load_texture(&texture.0, &texture.1, settings.aniso_level);
             }
             self.load_shader(&material.shader);
             self.materials.insert(name.to_string(), material);
@@ -150,8 +150,8 @@ impl AssetPool {
         }
 
         for texture_name in &material.textures {
-            let mut texture = self.textures.get_mut(texture_name)
-            .expect(format!("Texture, {}, was never loaded", texture_name).as_str());
+            let mut texture = self.textures.get_mut(&texture_name.0)
+            .expect(format!("Texture, {}, was never loaded", texture_name.0).as_str());
 
             texture.1 = texture.1 - 1;
             if texture.1 == 0 {
@@ -163,9 +163,9 @@ impl AssetPool {
         self.materials.get(name)
     }
 
-    pub fn load_texture(&mut self, name: &str, aniso_level: f32) {
+    pub fn load_texture(&mut self, name: &str, filter: &MagnificationFilter, aniso_level: f32) {
         if self.get_texture(&name).is_none() {
-            self.textures.insert(name.to_string(), (Texture::new(name, gl::NEAREST, aniso_level), 1)); //TODO: materials should declare texture filtering
+            self.textures.insert(name.to_string(), (Texture::new(name, to_gl_filter(filter), aniso_level), 1)); //TODO: materials should declare texture filtering
         } else {
             let mut tup = self.textures.get_mut(name).unwrap();
             tup.1 = tup.1 + 1;

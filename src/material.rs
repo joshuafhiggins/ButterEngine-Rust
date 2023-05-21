@@ -5,8 +5,22 @@ use serde::{Serialize, Deserialize};
 #[derive(Serialize, Deserialize, Default)]
 pub struct Material {
     pub name: String,
-    pub textures: Vec<String>,
+    pub textures: Vec<(String, MagnificationFilter)>,
     pub shader: String,
+}
+
+#[derive(Serialize, Deserialize, Default)]
+pub enum MagnificationFilter {
+    #[default]
+    Linear,
+    Nearest,
+}
+
+pub fn to_gl_filter(filter: &MagnificationFilter) -> u32{
+    match filter {
+        MagnificationFilter::Linear => gl::LINEAR,
+        MagnificationFilter::Nearest => gl::NEAREST,
+    }
 }
 
 impl Material {

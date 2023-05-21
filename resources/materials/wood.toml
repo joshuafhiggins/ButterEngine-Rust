@@ -1,3 +1,3 @@
 name = "wood"
-textures = ["planks_oak"]
+textures = [["planks_oak", "Nearest"], ["planks_oak", "Nearest"]]
 shader = "default"
