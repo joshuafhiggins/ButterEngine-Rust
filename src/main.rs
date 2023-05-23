@@ -17,7 +17,6 @@ use bevy_ecs::world::World;
 use components::*;
 use entities::*;
 use glam::*;
-use material::{Material, MagnificationFilter};
 use mesh::Mesh;
 use resources::*;
 use settings::Settings;
