@@ -1,5 +1,6 @@
 use glam::*;
 use gl::types::*;
+use std::error::Error;
 use std::ffi::CString;
 use std::fs;
 use std::ptr;
@@ -34,23 +35,9 @@ impl Drop for Shader {
 }
 
 impl Shader {
-    pub fn new(name: &str) -> Shader {
-        let vertex_src: String = fs::read_to_string(format!("resources/shaders/{}.vs", name))
-            .expect(
-                format!(
-                    "Failed to load shader file at resources/shaders/{}.vs!",
-                    name
-                )
-                .as_str(),
-            );
-        let fragment_src: String = fs::read_to_string(format!("resources/shaders/{}.fs", name))
-            .expect(
-                format!(
-                    "Failed to load shader file at resources/shaders/{}.fs!",
-                    name
-                )
-                .as_str(),
-            );
+    pub fn new(name: &str) -> Result<Shader, Box<dyn Error>> {
+        let vertex_src: String = fs::read_to_string(format!("resources/shaders/{}.vs", name))?;
+        let fragment_src: String = fs::read_to_string(format!("resources/shaders/{}.fs", name))?;
 
         let program = unsafe {
             // build and compile our shader program
@@ -124,9 +111,7 @@ impl Shader {
             shader_program
         };
 
-        return Shader {
-            program: program,
-        };
+        Ok(Shader { program: program })
     }
 
     //Bools

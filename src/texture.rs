@@ -1,15 +1,19 @@
-use std::{io::Read, os::raw::c_void, fs::File};
+use std::{os::raw::c_void, fs::File, io::{Error, Read}};
 
-use crate::renderer::{self, GPUObject};
+use crate::{renderer::{self, GPUObject}};
 
 pub struct Texture {
     handle: u32,
 }
 
 impl Texture {
-    pub fn new(name: &str, mag_filter: u32, aniso_level: f32) -> Texture {
+    pub fn new(name: &str, mag_filter: u32, aniso_level: f32) -> Result<Texture, Error> {
         let mut texture: Texture = Texture { handle: 0 };
-        let image: Image = Image::new(&name);
+        let image = Image::new(&name);
+        if image.is_err() {
+            return Err(image.err().unwrap());
+        }
+        let image = image.unwrap();
 
         unsafe {
             gl::GenTextures(1, &mut texture.handle);
@@ -40,7 +44,7 @@ impl Texture {
         }
         texture.unbind();
 
-        return texture;
+        return Ok(texture);
     }
 }
 
@@ -75,11 +79,15 @@ struct Image {
 }
 
 impl Image {
-    pub fn new(name: &str) -> Image {
+    pub fn new(name: &str) -> Result<Image, Error> {
         let mut image: Image = Image { width: 0, height: 0, componenets: 0, opengl_load_type: gl::RGB, data: 0 as *mut u8 };
 
         // Load file into memory
-        let mut f = File::open(format!("resources/textures/{}.png", name)).expect("file not found");
+        let mut f = File::open(format!("resources/textures/{}.png", name));
+        if f.is_err() {
+            return Err(f.err().unwrap());
+        }
+        let mut f = f.unwrap();
         let mut contents = vec![];
         f.read_to_end(&mut contents).expect("Failed to put data into Vec<u8> in texture!");
 
@@ -102,7 +110,7 @@ impl Image {
             4 => gl::RGBA,
             _ => gl::RGB
         };
-        return image;
+        return Ok(image);
     }
 }
 

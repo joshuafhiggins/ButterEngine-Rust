@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, io::Error};
 
 use serde::{Serialize, Deserialize};
 
@@ -9,7 +9,7 @@ pub struct Material {
     pub shader: String,
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Clone, Copy)]
 pub enum MagnificationFilter {
     #[default]
     Linear,
@@ -24,11 +24,11 @@ pub fn to_gl_filter(filter: &MagnificationFilter) -> u32{
 }
 
 impl Material {
-    pub fn new(name: &str) -> Material {
+    pub fn new(name: &str) -> Result<Material, Error> {
         let file = fs::read_to_string(format!("resources/materials/{}.toml", &name));
         match file {
-            Ok(file_string) => toml::from_str(&file_string).unwrap_or_default(),
-            Err(_) => Material {name: name.to_string(), textures: Vec::new(), shader: String::new()},
+            Ok(file_string) => Ok(toml::from_str(&file_string).unwrap_or_default()),
+            Err(error) => Err(error),
         }
     }
     // pub fn save(&self) {

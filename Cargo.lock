@@ -219,6 +219,7 @@ dependencies = [
  "glfw",
  "libm",
  "serde",
+ "simple-error",
  "stb_image_rust",
  "toml",
 ]
@@ -619,6 +620,12 @@ checksum = "0efd8caf556a6cebd3b285caf480045fcc1ac04f6bd786b09a6f11af30c4fcf4"
 dependencies = [
  "serde",
 ]
+
+[[package]]
+name = "simple-error"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8542b68b8800c3cda649d2c72d688b6907b30f1580043135d61669d4aad1c175"
 
 [[package]]
 name = "slab"

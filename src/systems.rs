@@ -79,8 +79,8 @@ pub fn render_scene(mut query_mesh: Query<&Mesh>, mut query_camera: Query<&Camer
         for mesh in &mut query_mesh {
             //TODO: Support multiple textures
             let material = assets.get_material(&mesh.material).unwrap();
-            let shader = &assets.get_shader(&material.shader).unwrap().0;
-            let texture = &assets.get_texture(&material.textures.get(0).unwrap().0).unwrap().0;
+            let shader = &assets.get_shader(&material.shader).unwrap();
+            let texture = &assets.get_texture(&material.textures.get(0).unwrap().0).unwrap();
     
             shader.bind();
             shader.set_uniform_4x4f("camMatrix".to_string(), None, &camera.get_calculation());

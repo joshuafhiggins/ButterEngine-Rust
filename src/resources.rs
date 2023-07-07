@@ -1,8 +1,10 @@
-use std::collections::HashMap;
+use simple_error::*;
+
+use std::{collections::HashMap, error::Error, sync::Arc};
 
 use bevy_ecs::system::Resource;
 
-use crate::{texture::Texture, shader::Shader, material::{Material, to_gl_filter, MagnificationFilter}, settings::Settings};
+use crate::{texture::{Texture, self}, shader::{Shader, self}, material::{Material, to_gl_filter, MagnificationFilter, self}, settings::Settings};
 
 //TODO: Fix accesses
 #[derive(Resource)]
@@ -121,88 +123,83 @@ impl WindowResource {
 //TODO: Models
 #[derive(Resource, Default)]
 pub struct AssetPool {
-    materials: HashMap<String, Material>,
-    textures: HashMap<String, (Texture, u32)>,
-    shaders: HashMap<String, (Shader, u32)>,
+    materials: HashMap<String, Arc<Material>>,
+    textures: HashMap<String, Arc<Texture>>,
+    shaders: HashMap<String, Arc<Shader>>,
 }
 
 impl AssetPool {
-    pub fn load_material(&mut self, name: &str, settings: &Settings) {
-        if self.get_material(&name).is_none() {
-            let material = Material::new(name);
-            for texture in &material.textures {
-                self.load_texture(&texture.0, &texture.1, settings.aniso_level);
-            }
-            self.load_shader(&material.shader);
-            self.materials.insert(name.to_string(), material);
+    pub fn load_material(&mut self, name: &str, settings: &Settings) -> Result<Arc<Material>, Box<dyn Error>> {
+        if self.get_material(name).is_some() {
+            return Ok(self.get_material(name).unwrap().clone());
         }
+        let material = Material::new(name)?;
+        
+        for texture in &material.textures {
+            self.load_texture(&texture.0, &texture.1, settings.aniso_level)?;
+        }
+        self.load_shader(&material.shader)?;
+
+        self.materials.insert(name.to_string(), Arc::new(material));
+        Ok(self.get_material(name).unwrap().clone())
     }
-    pub fn unload_material(&mut self, name: &str) {
-        let material = self.materials.get(name)
-        .expect(format!("Material, {}, was never loaded", name).as_str());
-
-        let mut shader = self.shaders.get_mut(&material.shader)
-        .expect(format!("Shader, {}, was never loaded", material.shader).as_str());
-
-        shader.1 = shader.1 - 1;
-        if shader.1 == 0 {
-            self.shaders.remove(name);
+    pub fn unload_material(&mut self, name: &str)-> Option<Box<dyn Error>> {
+        let material = self.get_material(name)?;
+        if Arc::strong_count(material) > 1 {
+            return Some(SimpleError::new(format!("Material, {}, is still in use!", name)).into());
         }
-
-        for texture_name in &material.textures {
-            let mut texture = self.textures.get_mut(&texture_name.0)
-            .expect(format!("Texture, {}, was never loaded", texture_name.0).as_str());
-
-            texture.1 = texture.1 - 1;
-            if texture.1 == 0 {
-                self.textures.remove(name);
-            }
-        }
+        self.materials.remove(name);
+        None
     }
-    pub fn get_material(&self, name: &str) -> Option<&Material> {
+    pub fn get_material(&self, name: &str) -> Option<&Arc<Material>> {
         self.materials.get(name)
     }
 
-    pub fn load_texture(&mut self, name: &str, filter: &MagnificationFilter, aniso_level: f32) {
-        if self.get_texture(&name).is_none() {
-            self.textures.insert(name.to_string(), (Texture::new(name, to_gl_filter(filter), aniso_level), 1)); //TODO: materials should declare texture filtering
-        } else {
-            let mut tup = self.textures.get_mut(name).unwrap();
-            tup.1 = tup.1 + 1;
+    pub fn load_texture(&mut self, name: &str, filter: &MagnificationFilter, aniso_level: f32) -> Result<Arc<Texture>, Box<dyn Error>> {
+        if self.get_texture(name).is_some() {
+            return Ok(self.get_texture(name).unwrap().clone());
         }
+
+        let texture = Texture::new(name, material::to_gl_filter(filter), aniso_level)?;
+        self.textures.insert(name.to_string(), Arc::new(texture));
+        Ok(self.get_texture(name).unwrap().clone())
     }
-    pub fn unload_texture(&mut self, name: &str) {
+    pub fn unload_texture(&mut self, name: &str) -> Option<Box<dyn Error>> {
+        let texture = self.get_texture(name)?;
+        if Arc::strong_count(texture) > 1 {
+            return Some(SimpleError::new(format!("Texture, {}, is still in use!", name)).into());
+        }
         self.textures.remove(name);
+        None
     }
-    pub fn get_texture(&self, name: &str) -> Option<&(Texture, u32)> {
+    pub fn get_texture(&self, name: &str) -> Option<&Arc<Texture>> {
         self.textures.get(name)
     }
 
-    pub fn load_shader(&mut self, name: &str) {
-        if self.get_material(&name).is_none() {
-            self.shaders.insert(name.to_string(), (Shader::new(name), 1));
-        } else {
-            let mut tup = self.shaders.get_mut(name).unwrap();
-            tup.1 = tup.1 + 1;
+    pub fn load_shader(&mut self, name: &str) -> Result<Arc<Shader>, Box<dyn Error>> {
+        if self.get_shader(name).is_some() {
+            return Ok(self.get_shader(name).unwrap().clone());
         }
+
+        let shader = Shader::new(name)?;
+        self.shaders.insert(name.to_string(), Arc::new(shader));
+        Ok(self.get_shader(name).unwrap().clone())
     }
-    pub fn unload_shader(&mut self, name: &str) {
+    pub fn unload_shader(&mut self, name: &str) -> Option<Box<dyn Error>> {
+        let shader = self.get_shader(name)?;
+        if Arc::strong_count(shader) > 1 {
+            return Some(SimpleError::new(format!("Shader, {}, is still in use!", name)).into());
+        }
         self.shaders.remove(name);
+        None
     }
-    pub fn get_shader(&self, name: &str) -> Option<&(Shader, u32)> {
+    pub fn get_shader(&self, name: &str) -> Option<&Arc<Shader>> {
         self.shaders.get(name)
     }
 
     pub fn unload_all(&mut self) {
         self.materials.clear();
-
-        for texture in &self.textures {
-            drop(texture.1);
-        }
         self.textures.clear();
-        for shader in &self.shaders {
-            drop(shader.1);
-        }
         self.shaders.clear();
     }
 }

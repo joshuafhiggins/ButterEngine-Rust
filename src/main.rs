@@ -65,7 +65,7 @@ fn main() {
     ];
 
     let mut asset_pool = AssetPool::default();
-    asset_pool.load_material("wood", &settings);
+    let _ = asset_pool.load_material("wood", &settings);
 
     let mut mesh: Mesh = Mesh::new(indices.to_vec(), "wood");
     
