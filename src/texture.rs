@@ -83,11 +83,11 @@ impl Image {
         let mut image: Image = Image { width: 0, height: 0, componenets: 0, opengl_load_type: gl::RGB, data: 0 as *mut u8 };
 
         // Load file into memory
-        let mut f = File::open(format!("resources/textures/{}.png", name));
-        if f.is_err() {
-            return Err(f.err().unwrap());
+        let file = File::open(format!("resources/textures/{}.png", name));
+        if file.is_err() {
+            return Err(file.err().unwrap());
         }
-        let mut f = f.unwrap();
+        let mut f = file.unwrap();
         let mut contents = vec![];
         f.read_to_end(&mut contents).expect("Failed to put data into Vec<u8> in texture!");
 

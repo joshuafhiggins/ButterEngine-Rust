@@ -4,17 +4,17 @@ use std::{collections::HashMap, error::Error, sync::Arc};
 
 use bevy_ecs::system::Resource;
 
-use crate::{texture::{Texture, self}, shader::{Shader, self}, material::{Material, to_gl_filter, MagnificationFilter, self}, settings::Settings};
+use crate::{texture::{Texture}, shader::{Shader}, material::{Material, MagnificationFilter, self}, settings::Settings};
 
 //TODO: Fix accesses
 #[derive(Resource)]
 pub struct Input<T> {
     keys: HashMap<T, KeyState>,
-    pub xpos: f64,
-    pub ypos: f64,
-    pub last_xpos: f64,
-    pub last_ypos: f64,
-    pub cursor_mode: glfw::CursorMode,
+    xpos: f64,
+    ypos: f64,
+    last_xpos: f64,
+    last_ypos: f64,
+    cursor_mode: glfw::CursorMode,
 }
 
 #[derive(PartialEq)]
@@ -92,6 +92,25 @@ impl Input<glfw::Key> {
             KeyState::JustPressed => false,
             KeyState::Pressed => false,
         }
+    }
+
+    pub fn xpos(&self) -> f64 {
+        self.xpos
+    }
+    pub fn ypos(&self) -> f64 {
+        self.ypos
+    }
+    pub fn last_xpos(&self) -> f64 {
+        self.last_xpos
+    }
+    pub fn last_ypos(&self) -> f64 {
+        self.last_ypos
+    }
+    pub fn cursor_mode(&self) -> glfw::CursorMode {
+        self.cursor_mode
+    }
+    pub fn set_cursor_mode(&mut self, mode: glfw::CursorMode) {
+        self.cursor_mode = mode;
     }
 }
 

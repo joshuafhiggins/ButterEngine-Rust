@@ -85,12 +85,12 @@ fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent, worl
         glfw::WindowEvent::MouseButton(glfw::MouseButton::Button1, glfw::Action::Press, _) => {
             let mut input = world.get_resource_mut::<Input<glfw::Key>>().unwrap();
             window.set_cursor_mode(glfw::CursorMode::Disabled);
-            input.cursor_mode = glfw::CursorMode::Disabled;
+            input.set_cursor_mode(glfw::CursorMode::Disabled);
         }
         glfw::WindowEvent::Key(glfw::Key::Space, _, glfw::Action::Press, _) => {
             let mut input = world.get_resource_mut::<Input<glfw::Key>>().unwrap();
             window.set_cursor_mode(glfw::CursorMode::Normal);
-            input.cursor_mode = glfw::CursorMode::Normal;
+            input.set_cursor_mode(glfw::CursorMode::Normal);
         }
         glfw::WindowEvent::Key(a, _, b, _) => {
             let mut input = world.get_resource_mut::<Input<glfw::Key>>().unwrap();

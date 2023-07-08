@@ -11,7 +11,7 @@ pub fn move_camera(
     time: Res<Time>,
 ) {
     for (mut position, mut direction, mut camera) in &mut query {
-        if input.cursor_mode == glfw::CursorMode::Disabled {
+        if input.cursor_mode() == glfw::CursorMode::Disabled {
             let move_factor = CAMERA_SPEED * time.delta_time;
             if input.pressed(Key::W) {
                 position.d += move_factor * camera.front;
@@ -26,8 +26,8 @@ pub fn move_camera(
                 position.d += camera.front.cross(camera.up).normalize() * move_factor;
             }
 
-            let mut xoffset = input.xpos - input.last_xpos;
-            let mut yoffset = input.last_ypos - input.ypos;
+            let mut xoffset = input.xpos() - input.last_xpos();
+            let mut yoffset = input.last_ypos() - input.ypos();
 
             if camera.first_mouse {
                 xoffset = 0.0;
