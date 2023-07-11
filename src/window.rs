@@ -5,28 +5,34 @@ use glfw::{Context, ffi};
 use crate::resources::*;
 
 pub struct Window {
-    pub handle: glfw::Window,
-    pub glfw: glfw::Glfw,
-    pub events: Receiver<(f64, glfw::WindowEvent)>,
+    handle: glfw::Window,
+    glfw: glfw::Glfw,
+    events: Receiver<(f64, glfw::WindowEvent)>,
 }
 
 impl Window {
-    pub fn new(width: u32, height: u32, title: &str, framerate: i32) -> Window {
+    pub fn new(width: u32, height: u32, title: &str) -> Window {
         let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
-        let (window, events) = glfw.create_window(width, height, title, glfw::WindowMode::Windowed)
+        let (mut window, events) = glfw.create_window(width, height, title, glfw::WindowMode::Windowed)
             .expect("Failed to create GLFW window.");
-        let mut our_window = Window { handle: window, glfw: glfw, events: events};
 
-        our_window.glfw.window_hint(glfw::WindowHint::ContextVersion(4, 6));
-        our_window.glfw.window_hint(glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core));
+        window.glfw.window_hint(glfw::WindowHint::ContextVersion(4, 6));
+        window.glfw.window_hint(glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core));
         #[cfg(target_os = "macos")]
-        our_window.glfw.window_hint(glfw::WindowHint::OpenGlForwardCompat(true));
+        window.glfw.window_hint(glfw::WindowHint::OpenGlForwardCompat(true));
 
-        our_window.handle.make_current();
-        our_window.handle.set_all_polling(true);
-        our_window.set_swap_interval(framerate);
+        window.make_current();
+        window.set_all_polling(true);
 
-        return our_window;
+        gl::load_with(|s| window.get_proc_address(s) as * const _);
+
+        let mut our_window = Window { handle: window, glfw: glfw, events: events };
+
+        our_window.center();
+        our_window.init_gl();
+        our_window.set_swap_interval(0);
+        
+        our_window
     }
 
     pub fn center(&mut self) {
@@ -47,22 +53,19 @@ impl Window {
 
         self.glfw.poll_events();
 
-        for (_, event) in glfw::flush_messages(&self.events) {
-            handle_window_event(&mut self.handle, event, world);
-        }
+        self.handle_window_events(world);
 
         let mut time = world.get_resource_mut::<Time>().unwrap();
-        time.update(self.handle.glfw.get_time() as f32);
+        time.update();
     }
 
-    pub fn set_swap_interval(&mut self, interval: i32) {
+    fn set_swap_interval(&self, interval: i32) {
         unsafe {
             ffi::glfwSwapInterval(interval as c_int);
         }
     }
 
-    pub fn init_gl(&mut self) {
-        gl::load_with(|s| self.handle.get_proc_address(s) as * const _);
+    pub fn init_gl(&self) {
         unsafe {
             gl::ClearColor(0.2, 0.3, 0.3, 1.0);
             gl::Enable(gl::DEPTH_TEST);
@@ -73,41 +76,45 @@ impl Window {
     pub fn should_close(&self) -> bool {
         self.handle.should_close()
     }
- 
-}
 
-fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent, world: &mut World) {
-    //TODO: Handle all events
-    match event {
-        glfw::WindowEvent::Key(glfw::Key::Escape, _, glfw::Action::Press, _) => {
-            window.set_should_close(true);
-        }
-        glfw::WindowEvent::MouseButton(glfw::MouseButton::Button1, glfw::Action::Press, _) => {
-            let mut input = world.get_resource_mut::<Input<glfw::Key>>().unwrap();
-            window.set_cursor_mode(glfw::CursorMode::Disabled);
-            input.set_cursor_mode(glfw::CursorMode::Disabled);
-        }
-        glfw::WindowEvent::Key(glfw::Key::Space, _, glfw::Action::Press, _) => {
-            let mut input = world.get_resource_mut::<Input<glfw::Key>>().unwrap();
-            window.set_cursor_mode(glfw::CursorMode::Normal);
-            input.set_cursor_mode(glfw::CursorMode::Normal);
-        }
-        glfw::WindowEvent::Key(a, _, b, _) => {
-            let mut input = world.get_resource_mut::<Input<glfw::Key>>().unwrap();
-            input.dispatch_keyboard(a, b);
-        }
-        glfw::WindowEvent::CursorPos(a, b) => {
-            let mut input = world.get_resource_mut::<Input<glfw::Key>>().unwrap();
-            input.dispatch_mouse(a, b);
-        }
-        glfw::WindowEvent::Size(a, b) => {
-            let mut win_resource = world.get_resource_mut::<WindowResource>().unwrap();
-            win_resource.width = a;
-            win_resource.height = b;
-            unsafe {
-                gl::Viewport(0, 0, a, b);
+    pub fn aspect_ratio(&self) -> f32 {
+        self.handle.get_framebuffer_size().0 as f32 / self.handle.get_framebuffer_size().1 as f32
+    }
+
+    fn handle_window_events(&mut self, world: &mut World) {
+        for (_, event) in glfw::flush_messages(&self.events) { //TODO: Handle all events
+            match event {
+                glfw::WindowEvent::Key(glfw::Key::Escape, _, glfw::Action::Press, _) => {
+                    self.handle.set_should_close(true);
+                }
+                glfw::WindowEvent::MouseButton(glfw::MouseButton::Button1, glfw::Action::Press, _) => {
+                    let mut input = world.get_resource_mut::<Input<glfw::Key>>().unwrap();
+                    self.handle.set_cursor_mode(glfw::CursorMode::Disabled);
+                    input.set_cursor_mode(glfw::CursorMode::Disabled);
+                }
+                glfw::WindowEvent::Key(glfw::Key::Space, _, glfw::Action::Press, _) => {
+                    let mut input = world.get_resource_mut::<Input<glfw::Key>>().unwrap();
+                    self.handle.set_cursor_mode(glfw::CursorMode::Normal);
+                    input.set_cursor_mode(glfw::CursorMode::Normal);
+                }
+                glfw::WindowEvent::Key(a, _, b, _) => {
+                    let mut input = world.get_resource_mut::<Input<glfw::Key>>().unwrap();
+                    input.dispatch_keyboard(a, b);
+                }
+                glfw::WindowEvent::CursorPos(a, b) => {
+                    let mut input = world.get_resource_mut::<Input<glfw::Key>>().unwrap();
+                    input.dispatch_mouse(a, b);
+                }
+                glfw::WindowEvent::Size(a, b) => {
+                    let mut win_resource = world.get_resource_mut::<WindowResource>().unwrap();
+                    win_resource.set_ratio(self);
+                    unsafe {
+                        gl::Viewport(0, 0, a, b);
+                    }
+                }
+                _ => {}
             }
         }
-        _ => {}
     }
 }
+

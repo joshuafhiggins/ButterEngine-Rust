@@ -1,10 +1,10 @@
 use simple_error::*;
 
-use std::{collections::HashMap, error::Error, sync::Arc};
+use std::{collections::HashMap, error::Error, sync::Arc, time::*};
 
 use bevy_ecs::system::Resource;
 
-use crate::{texture::{Texture}, shader::{Shader}, material::{Material, MagnificationFilter, self}, settings::Settings};
+use crate::{texture::{Texture}, shader::{Shader}, material::{Material, MagnificationFilter, self}, settings::Settings, window::Window};
 
 //TODO: Fix accesses
 #[derive(Resource)]
@@ -114,28 +114,98 @@ impl Input<glfw::Key> {
     }
 }
 
-#[derive(Resource, Default)]
+#[derive(Resource)]
 pub struct Time {
-    pub delta_time: f32,
-    pub last_frame: f32,
+    startup: Instant,
+    first_update: Option<Instant>,
+    last_update: Option<Instant>,
+    // pausing
+    paused: bool,
+    // scaling
+    relative_speed: f64, // using `f64` instead of `f32` to minimize drift from rounding errors
+    delta: Duration,
+    delta_seconds: f32,
+    delta_seconds_f64: f64,
+    raw_delta: Duration,
+    raw_delta_seconds: f32,
+    raw_delta_seconds_f64: f64,
+}
+
+impl Default for Time {
+    fn default() -> Self {
+        Self {
+            startup: Instant::now(),
+            first_update: None,
+            last_update: None,
+            paused: false,
+            relative_speed: 1.0,
+            delta: Duration::ZERO,
+            delta_seconds: 0.0,
+            delta_seconds_f64: 0.0,
+            raw_delta: Duration::ZERO,
+            raw_delta_seconds: 0.0,
+            raw_delta_seconds_f64: 0.0,
+        }
+    }
 }
 
 impl Time {
-    pub fn update(&mut self, current_time: f32) {
-        self.delta_time = current_time - self.last_frame;
-        self.last_frame = current_time;  
+    pub fn update(&mut self) {
+        let now = Instant::now();
+
+        let raw_delta = now - self.last_update.unwrap_or(self.startup);
+        let delta = if self.paused {
+            Duration::ZERO
+        } else if self.relative_speed != 1.0 {
+            raw_delta.mul_f64(self.relative_speed)
+        } else {
+            // avoid rounding when at normal speed
+            raw_delta
+        };
+
+        if self.last_update.is_some() {
+            self.delta = delta;
+            self.delta_seconds = self.delta.as_secs_f32();
+            self.delta_seconds_f64 = self.delta.as_secs_f64();
+            self.raw_delta = raw_delta;
+            self.raw_delta_seconds = self.raw_delta.as_secs_f32();
+            self.raw_delta_seconds_f64 = self.raw_delta.as_secs_f64();
+        } else {
+            self.first_update = Some(now);
+        }
+
+        self.last_update = Some(now);
     }
+
+        pub fn delta(&self) -> Duration {
+            self.delta
+        }
+    
+        pub fn delta_seconds(&self) -> f32 {
+            self.delta_seconds
+        }
+    
+        pub fn delta_seconds_f64(&self) -> f64 {
+            self.delta_seconds_f64
+        }
 }
 
 #[derive(Resource)]
 pub struct WindowResource {
-    pub width: i32,
-    pub height: i32,
+    ratio: f32
 }
 
 impl WindowResource {
-    pub fn new(width: i32, height: i32) -> Self {
-        WindowResource { width: width, height: height }
+    pub fn new(window: &Window) -> Self {
+        WindowResource { ratio: window.aspect_ratio() }
+    }
+
+    pub fn ratio(&self) -> f32 {
+        self.ratio
+    }
+
+    pub fn set_ratio(&mut self, window: &Window) {
+        self.ratio = window.aspect_ratio();
     }
 }
 

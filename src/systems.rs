@@ -12,7 +12,7 @@ pub fn move_camera(
 ) {
     for (mut position, mut direction, mut camera) in &mut query {
         if input.cursor_mode() == glfw::CursorMode::Disabled {
-            let move_factor = CAMERA_SPEED * time.delta_time;
+            let move_factor = CAMERA_SPEED * time.delta_seconds();
             if input.pressed(Key::W) {
                 position.d += move_factor * camera.front;
             }
@@ -69,7 +69,7 @@ pub fn update_wireframe(input: Res<Input<glfw::Key>>, mut settings: ResMut<Setti
 pub fn update_projection(mut query: Query<&mut Camera>, window: Res<WindowResource>, settings: Res<Settings>) {
     if window.is_changed() || settings.is_changed() {
         for mut camera in &mut query {
-            camera.set_projection(settings.fov, window.width as f32 / window.height as f32, 0.01, 100.0);
+            camera.set_projection(settings.fov, window.ratio(), 0.01, 100.0);
         }
     }
 }
@@ -79,8 +79,8 @@ pub fn render_scene(mut query_mesh: Query<&Mesh>, mut query_camera: Query<&Camer
         for mesh in &mut query_mesh {
             //TODO: Support multiple textures
             let material = assets.get_material(&mesh.material).unwrap();
-            let shader = &assets.get_shader(&material.shader).unwrap();
-            let texture = &assets.get_texture(&material.textures.get(0).unwrap().0).unwrap();
+            let shader = assets.get_shader(&material.shader).unwrap();
+            let texture = assets.get_texture(&material.textures.get(0).unwrap().0).unwrap();
     
             shader.bind();
             shader.set_uniform_4x4f("camMatrix".to_string(), None, &camera.get_calculation());

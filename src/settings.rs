@@ -22,7 +22,7 @@ impl Default for Settings {
             width: 1280,
             height: 720,
             title: "Game - Butter Engine".to_string(),
-            swap_interval: -1,
+            swap_interval: 60,
             is_wireframe: false,
             fov: 90.0,
             aniso_level: 4.0,
@@ -34,7 +34,10 @@ pub fn load() -> Settings {
     let file = fs::read_to_string(SETTINGS_LOCATION);
     match file {
         Ok(file_string) => toml::from_str(&file_string).unwrap_or_default(),
-        Err(_) => Settings::default(),
+        Err(_) => {
+            println!("Unable to load settings!");
+            Settings::default()
+        },
     }
 }
 

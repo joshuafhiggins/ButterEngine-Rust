@@ -18,5 +18,5 @@ toml = "0.7.2"
 simple-error = "0.3.0"
 
 [dependencies.glfw]
-version = "0.51.0"
+version = "0.52.0"
 #default-features = false
