@@ -1,10 +1,11 @@
+use sdl2::keyboard::Keycode;
 use simple_error::*;
 
-use std::{collections::HashMap, error::Error, sync::Arc};
+use std::{collections::HashMap, error::Error, sync::Arc, time::*};
 
 use bevy_ecs::system::Resource;
 
-use crate::{texture::{Texture}, shader::{Shader}, material::{Material, MagnificationFilter, self}, settings::Settings};
+use crate::{texture::{Texture}, shader::{Shader}, material::{Material, MagnificationFilter, self}, settings::Settings, window::Window};
 
 //TODO: Fix accesses
 #[derive(Resource)]
@@ -14,7 +15,7 @@ pub struct Input<T> {
     ypos: f64,
     last_xpos: f64,
     last_ypos: f64,
-    cursor_mode: glfw::CursorMode,
+    cursor_enabled: bool,
 }
 
 #[derive(PartialEq)]
@@ -24,34 +25,30 @@ enum KeyState {
     Released,
 }
 
-impl Input<glfw::Key> {
-    pub fn new() -> Input<glfw::Key> {
-        Input { keys: HashMap::new(), xpos: 0.0, ypos: 0.0, last_xpos: 0.0, last_ypos: 0.0, cursor_mode: glfw::CursorMode::Normal }
+impl Input<Keycode> {
+    pub fn new() -> Input<Keycode> {
+        Input { keys: HashMap::new(), xpos: 0.0, ypos: 0.0, last_xpos: 0.0, last_ypos: 0.0, cursor_enabled: true }
     }
 
-    pub fn dispatch_keyboard(&mut self, key: glfw::Key, action: glfw::Action) {
-        match action {
-            glfw::Action::Release => {
-                if self.keys.contains_key(&key) {
-                    let value = self.keys.get_mut(&key).unwrap();
-                    *value = KeyState::Released
-                } else {
-                    self.keys.insert(key, KeyState::Released);
-                }
-            },
-            glfw::Action::Press => {
-                if self.keys.contains_key(&key) {
-                    let value = self.keys.get_mut(&key).unwrap();
-                    match value {
-                        KeyState::JustPressed => *value = KeyState::Pressed, //THIS CASE NEVER HAPPENS, glfw only sends one pressed event
-                        KeyState::Pressed => {},
-                        KeyState::Released => *value = KeyState::JustPressed,
-                    }
-                } else {
-                    self.keys.insert(key, KeyState::JustPressed);
-                }
-            },
-            _ => {},
+    pub fn keyboard_down(&mut self, key: Keycode) {
+        if self.keys.contains_key(&key) {
+            let value = self.keys.get_mut(&key).unwrap();
+            match value {
+                KeyState::JustPressed => *value = KeyState::Pressed, //THIS CASE NEVER HAPPENS, glfw only sends one pressed event
+                KeyState::Pressed => {},
+                KeyState::Released => *value = KeyState::JustPressed,
+            }
+        } else {
+            self.keys.insert(key, KeyState::JustPressed);
+        }
+    }
+
+    pub fn keyboard_up(&mut self, key: Keycode) {
+        if self.keys.contains_key(&key) {
+            let value = self.keys.get_mut(&key).unwrap();
+            *value = KeyState::Released
+        } else {
+            self.keys.insert(key, KeyState::Released);
         }
     }
 
@@ -72,21 +69,21 @@ impl Input<glfw::Key> {
         self.last_ypos = self.ypos;
     }
 
-    pub fn just_pressed(&self, key: glfw::Key) -> bool {
+    pub fn just_pressed(&self, key: Keycode) -> bool {
         match self.keys.get(&key).unwrap_or(&KeyState::Released) {
             KeyState::Pressed => false,
             KeyState::JustPressed => true,
             KeyState::Released => false,
         }
     }
-    pub fn pressed(&self, key: glfw::Key) -> bool {
+    pub fn pressed(&self, key: Keycode) -> bool {
         match self.keys.get(&key).unwrap_or(&KeyState::Released) {
             KeyState::Pressed => true,
             KeyState::JustPressed => false,
             KeyState::Released => false,
         }
     }
-    pub fn released(&self, key: glfw::Key) -> bool {
+    pub fn released(&self, key: Keycode) -> bool {
         match self.keys.get(&key).unwrap_or(&KeyState::Released) {
             KeyState::Released => true,
             KeyState::JustPressed => false,
@@ -106,36 +103,106 @@ impl Input<glfw::Key> {
     pub fn last_ypos(&self) -> f64 {
         self.last_ypos
     }
-    pub fn cursor_mode(&self) -> glfw::CursorMode {
-        self.cursor_mode
+    pub fn cursor_enabled(&self) -> bool {
+        self.cursor_enabled
     }
-    pub fn set_cursor_mode(&mut self, mode: glfw::CursorMode) {
-        self.cursor_mode = mode;
-    }
-}
-
-#[derive(Resource, Default)]
-pub struct Time {
-    pub delta_time: f32,
-    pub last_frame: f32,
-}
-
-impl Time {
-    pub fn update(&mut self, current_time: f32) {
-        self.delta_time = current_time - self.last_frame;
-        self.last_frame = current_time;  
+    pub fn set_cursor_enabled(&mut self, state: bool) {
+        self.cursor_enabled = state;
     }
 }
 
 #[derive(Resource)]
+pub struct Time {
+    startup: Instant,
+    first_update: Option<Instant>,
+    last_update: Option<Instant>,
+    // pausing
+    paused: bool,
+    // scaling
+    relative_speed: f64, // using `f64` instead of `f32` to minimize drift from rounding errors
+    delta: Duration,
+    delta_seconds: f32,
+    delta_seconds_f64: f64,
+    raw_delta: Duration,
+    raw_delta_seconds: f32,
+    raw_delta_seconds_f64: f64,
+}
+
+impl Default for Time {
+    fn default() -> Self {
+        Self {
+            startup: Instant::now(),
+            first_update: None,
+            last_update: None,
+            paused: false,
+            relative_speed: 1.0,
+            delta: Duration::ZERO,
+            delta_seconds: 0.0,
+            delta_seconds_f64: 0.0,
+            raw_delta: Duration::ZERO,
+            raw_delta_seconds: 0.0,
+            raw_delta_seconds_f64: 0.0,
+        }
+    }
+}
+
+impl Time {
+    pub fn update(&mut self) {
+        let now = Instant::now();
+
+        let raw_delta = now - self.last_update.unwrap_or(self.startup);
+        let delta = if self.paused {
+            Duration::ZERO
+        } else if self.relative_speed != 1.0 {
+            raw_delta.mul_f64(self.relative_speed)
+        } else {
+            // avoid rounding when at normal speed
+            raw_delta
+        };
+
+        if self.last_update.is_some() {
+            self.delta = delta;
+            self.delta_seconds = self.delta.as_secs_f32();
+            self.delta_seconds_f64 = self.delta.as_secs_f64();
+            self.raw_delta = raw_delta;
+            self.raw_delta_seconds = self.raw_delta.as_secs_f32();
+            self.raw_delta_seconds_f64 = self.raw_delta.as_secs_f64();
+        } else {
+            self.first_update = Some(now);
+        }
+
+        self.last_update = Some(now);
+    }
+
+        pub fn delta(&self) -> Duration {
+            self.delta
+        }
+    
+        pub fn delta_seconds(&self) -> f32 {
+            self.delta_seconds
+        }
+    
+        pub fn delta_seconds_f64(&self) -> f64 {
+            self.delta_seconds_f64
+        }
+}
+
+#[derive(Resource)]
 pub struct WindowResource {
-    pub width: i32,
-    pub height: i32,
+    ratio: f32
 }
 
 impl WindowResource {
-    pub fn new(width: i32, height: i32) -> Self {
-        WindowResource { width: width, height: height }
+    pub fn new(window: &Window) -> Self {
+        WindowResource { ratio: window.aspect_ratio() }
+    }
+
+    pub fn ratio(&self) -> f32 {
+        self.ratio
+    }
+
+    pub fn set_ratio(&mut self, window: &Window) {
+        self.ratio = window.aspect_ratio();
     }
 }
 

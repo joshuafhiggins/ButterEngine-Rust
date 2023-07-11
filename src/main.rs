@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+//#![allow(dead_code)]
 
 mod components;
 mod entities;
@@ -12,13 +12,14 @@ mod window;
 mod mesh;
 mod material;
 
-use bevy_ecs::schedule::Schedule;
+use bevy_ecs::schedule::{Schedule, IntoSystemConfigs};
 use bevy_ecs::world::World;
 use components::*;
 use entities::*;
 use glam::*;
 use mesh::Mesh;
 use resources::*;
+use sdl2::keyboard::Keycode;
 use settings::Settings;
 use window::Window;
 
@@ -28,10 +29,7 @@ fn main() {
         settings.width,
         settings.height,
         &settings.title,
-        settings.swap_interval,
     );
-    window.center();
-    window.init_gl();
     renderer::update_wireframe(&settings.is_wireframe);
 
     let vertices: [f32; 15] = [
@@ -75,13 +73,12 @@ fn main() {
 
     let mut world = World::new();
 
-    let mut preupdate_sys = Schedule::default();
-    let mut gl_sys = Schedule::default();
-    gl_sys.set_executor_kind(bevy_ecs::schedule::ExecutorKind::SingleThreaded);
-    let mut update_sys = Schedule::default();
-    let mut render_sys = Schedule::default();
-    render_sys.set_executor_kind(bevy_ecs::schedule::ExecutorKind::SingleThreaded);
-    let mut postupdate_sys = Schedule::default();
+    let mut opengl_update = Schedule::default();
+    let mut opengl_render = Schedule::default();
+    let mut update = Schedule::default();
+
+    opengl_render.set_executor_kind(bevy_ecs::schedule::ExecutorKind::SingleThreaded);
+    opengl_update.set_executor_kind(bevy_ecs::schedule::ExecutorKind::SingleThreaded);
 
     let _ = world.spawn(CameraBundle {
         position: Position {
@@ -97,7 +94,7 @@ fn main() {
             view: Mat4::IDENTITY,
             projection: Mat4::perspective_rh_gl(
             90.0_f32.to_radians(), 
-            window.handle.get_framebuffer_size().0 as f32 / window.handle.get_framebuffer_size().1 as f32, 
+            window.aspect_ratio(), 
             0.01, 
             100.0),
         },
@@ -108,29 +105,43 @@ fn main() {
     world.insert_resource(Input::new());
     world.insert_resource(Time::default());
     world.insert_resource(settings);
-    world.insert_resource(WindowResource::new(window.handle.get_framebuffer_size().0, window.handle.get_framebuffer_size().1));
+    world.insert_resource(WindowResource::new(&window));
     world.insert_resource(asset_pool);
 
-    update_sys.add_system(systems::move_camera);
-    update_sys.add_system(systems::update_projection);
-    gl_sys.add_system(systems::update_wireframe);
-    render_sys.add_system(systems::render_scene);
+    update.add_system(systems::move_camera);
+    update.add_system(systems::update_projection);
+    opengl_update.add_system(systems::update_wireframe);
+    opengl_render.add_system(systems::render_scene);
 
-    while !window.should_close() {
-        preupdate_sys.run(&mut world);
-        gl_sys.run(&mut world);
-        update_sys.run(&mut world);
+    let mut events = window.sdl.event_pump().unwrap();
+
+    loop {
+        //Must come before our input.dispatch()
+        let mut input = world.get_resource_mut::<Input<Keycode>>().unwrap();
+        input.update();
+        let mut time = world.get_resource_mut::<Time>().unwrap();
+        time.update();
+
+        opengl_update.run(&mut world);
+        update.run(&mut world);
 
         unsafe {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
-        render_sys.run(&mut world);
+        opengl_render.run(&mut world);
 
-        postupdate_sys.run(&mut world);
+        window.swap();
 
-        window.update(&mut world);
-        window.swap_buffers();
+        if window.should_close() {
+            break;
+        }
+
+        for event in events.poll_iter() {
+            window.handle_window_event(event, &mut world);
+        }
+        let settings = world.get_resource_mut::<Settings>().unwrap();
+        ::std::thread::sleep(::std::time::Duration::new(0, 1_000_000_000u32 / settings.swap_interval as u32));
     }
 
     settings::save(world.get_resource::<Settings>().unwrap()).expect("Unable to save settings!");

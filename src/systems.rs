@@ -1,28 +1,28 @@
 use crate::{components::*, resources::*, settings::Settings, mesh::Mesh, renderer::GPUObject};
 use bevy_ecs::prelude::*;
-use glfw::Key;
+use sdl2::keyboard::Keycode;
 
 const CAMERA_SPEED: f32 = 1.0; // adjust accordingly
 const SENSITIVITY: f32 = 0.1;
 
 pub fn move_camera(
     mut query: Query<(&mut Position, &mut Rotation, &mut Camera)>,
-    input: Res<Input<glfw::Key>>,
+    input: Res<Input<Keycode>>,
     time: Res<Time>,
 ) {
     for (mut position, mut direction, mut camera) in &mut query {
-        if input.cursor_mode() == glfw::CursorMode::Disabled {
-            let move_factor = CAMERA_SPEED * time.delta_time;
-            if input.pressed(Key::W) {
+        if !input.cursor_enabled() {
+            let move_factor = CAMERA_SPEED * time.delta_seconds();
+            if input.pressed(Keycode::W) {
                 position.d += move_factor * camera.front;
             }
-            if input.pressed(Key::S) {
+            if input.pressed(Keycode::S) {
                 position.d -= move_factor * camera.front;
             }
-            if input.pressed(Key::A) {
+            if input.pressed(Keycode::A) {
                 position.d -= camera.front.cross(camera.up).normalize() * move_factor;
             }
-            if input.pressed(Key::D) {
+            if input.pressed(Keycode::D) {
                 position.d += camera.front.cross(camera.up).normalize() * move_factor;
             }
 
@@ -60,8 +60,8 @@ pub fn move_camera(
     }
 }
 
-pub fn update_wireframe(input: Res<Input<glfw::Key>>, mut settings: ResMut<Settings>) {
-    if input.just_pressed(glfw::Key::F5) {
+pub fn update_wireframe(input: Res<Input<Keycode>>, mut settings: ResMut<Settings>) {
+    if input.just_pressed(Keycode::F5) {
         crate::renderer::toggle_wireframe(&mut settings.is_wireframe);
     }
 }
@@ -69,7 +69,7 @@ pub fn update_wireframe(input: Res<Input<glfw::Key>>, mut settings: ResMut<Setti
 pub fn update_projection(mut query: Query<&mut Camera>, window: Res<WindowResource>, settings: Res<Settings>) {
     if window.is_changed() || settings.is_changed() {
         for mut camera in &mut query {
-            camera.set_projection(settings.fov, window.width as f32 / window.height as f32, 0.01, 100.0);
+            camera.set_projection(settings.fov, window.ratio(), 0.01, 100.0);
         }
     }
 }
