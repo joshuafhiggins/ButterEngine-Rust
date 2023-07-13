@@ -130,7 +130,7 @@ fn main() {
         let settings = world.get_resource_mut::<Settings>().unwrap();
         let time_spent = after.duration_since(before);
         let budget = std::time::Duration::new(0, 1_000_000_000u32 / settings.swap_interval as u32);
-        //::std::thread::sleep(budget.saturating_sub(time_spent));
+        ::std::thread::sleep(budget.saturating_sub(time_spent));
     }
 
     settings::save(world.get_resource::<Settings>().unwrap()).expect("Unable to save settings!");

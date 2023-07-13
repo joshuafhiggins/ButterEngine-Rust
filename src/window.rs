@@ -1,46 +1,73 @@
 use std::{sync::mpsc::Receiver, ffi::c_int};
 use bevy_ecs::prelude::*;
-use glfw::{Context, ffi};
+use raw_gl_context::{GlContext, GlConfig, Profile};
 
 use crate::resources::*;
 
+use winit::{
+    event::{Event, WindowEvent},
+    event_loop::EventLoop,
+    window::WindowBuilder, dpi::{Size, PhysicalSize, PhysicalPosition},
+};
+
+#[derive(Resource)]
 pub struct Window {
-    handle: glfw::Window,
-    glfw: glfw::Glfw,
-    events: Receiver<(f64, glfw::WindowEvent)>,
+    handle: winit::window::Window,
+    //context: GlContext,
 }
 
 impl Window {
     pub fn new(width: u32, height: u32, title: &str) -> Window {
-        let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
-        let (mut window, events) = glfw.create_window(width, height, title, glfw::WindowMode::Windowed)
-            .expect("Failed to create GLFW window.");
+        let event_loop = EventLoop::new();
+        let window = WindowBuilder::new()
+            .with_visible(false) //Make sure to make visible
+            .with_title(title.to_string())
+            .with_inner_size(PhysicalSize::new(width, height))
+            .build(&event_loop).unwrap();
 
-        window.glfw.window_hint(glfw::WindowHint::ContextVersion(4, 6));
-        window.glfw.window_hint(glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core));
-        #[cfg(target_os = "macos")]
-        window.glfw.window_hint(glfw::WindowHint::OpenGlForwardCompat(true));
+        // let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
+        // let (mut window, events) = glfw.create_window(width, height, title, glfw::WindowMode::Windowed)
+        //     .expect("Failed to create GLFW window.");
 
-        window.make_current();
-        window.set_all_polling(true);
+        let context = unsafe { 
+            GlContext::create(&window, GlConfig {
+                version: (4, 6),
+                #[cfg(target_os = "macos")]
+                profile: Profile::Compatibility,
+                profile: Profile::Core,
+                red_bits: 8,
+                blue_bits: 8,
+                green_bits: 8,
+                alpha_bits: 8,
+                depth_bits: 24,
+                stencil_bits: 8,
+                samples: None,
+                srgb: true,
+                double_buffer: true,
+                vsync: false,
+            }).unwrap()
+        };
 
-        gl::load_with(|s| window.get_proc_address(s) as * const _);
+        unsafe {
+            context.make_current();
+        }
+    
+        gl::load_with(|symbol| context.get_proc_address(symbol) as *const _);
 
-        let mut our_window = Window { handle: window, glfw: glfw, events: events };
+        let mut our_window = Window { handle: window };
 
         our_window.center();
         our_window.init_gl();
-        our_window.set_swap_interval(0);
         
         our_window
     }
 
     pub fn center(&mut self) {
-        let (win_width, win_height) = self.handle.get_size();
-        self.glfw.with_primary_monitor(|_, monitor| {
-           let vid_mode = monitor.expect("Unable to get the primrary monitor!").get_video_mode().expect("Unable to get the VidMode of the primrary monitor!");
-           self.handle.set_pos((vid_mode.width as i32 - win_width) / 2, (vid_mode.height as i32 - win_height) / 2);
-        });
+        let win_size = self.handle.inner_size();
+        let monitor_size = self.handle.primary_monitor().unwrap().size();
+        self.handle.set_outer_position(PhysicalPosition::new(
+            (monitor_size.width - win_size.width) / 2, 
+            (monitor_size.height - win_size.height) / 2));
     }
 
     pub fn swap_buffers(&mut self) {
@@ -59,12 +86,6 @@ impl Window {
         time.update();
     }
 
-    fn set_swap_interval(&self, interval: i32) {
-        unsafe {
-            ffi::glfwSwapInterval(interval as c_int);
-        }
-    }
-
     pub fn init_gl(&self) {
         unsafe {
             gl::ClearColor(0.2, 0.3, 0.3, 1.0);
@@ -78,7 +99,8 @@ impl Window {
     }
 
     pub fn aspect_ratio(&self) -> f32 {
-        self.handle.get_framebuffer_size().0 as f32 / self.handle.get_framebuffer_size().1 as f32
+        let size = self.handle.inner_size();
+        size.width as f32 / size.height as f32
     }
 
     fn handle_window_events(&mut self, world: &mut World) {
