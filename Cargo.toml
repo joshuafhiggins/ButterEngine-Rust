@@ -18,7 +18,3 @@ toml = "0.7.2"
 simple-error = "0.3.0"
 winit = "0.29.0-beta.0"
 raw-gl-context = { git = "https://github.com/joshuafhiggins/raw-gl-context.git" }
-
-[dependencies.glfw]
-version = "0.52.0"
-#default-features = false

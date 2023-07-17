@@ -21,13 +21,18 @@ use mesh::Mesh;
 use resources::*;
 use settings::Settings;
 use window::Window;
+use winit::event::{Event, WindowEvent};
+use winit::event_loop::EventLoop;
+use winit::keyboard::KeyCode;
 
 fn main() {
     let settings: Settings = settings::load();
-    let mut window = Window::new(
+    let event_loop = EventLoop::new();
+    let (window, gl_context) = Window::new(
         settings.width,
         settings.height,
         &settings.title,
+        &event_loop,
     );
     renderer::update_wireframe(&settings.is_wireframe);
 
@@ -104,7 +109,7 @@ fn main() {
     world.insert_resource(Input::new());
     world.insert_resource(Time::default());
     world.insert_resource(settings);
-    world.insert_resource(WindowResource::new(&window));
+    world.insert_resource(window);
     world.insert_resource(asset_pool);
 
     update.add_system(systems::move_camera);
@@ -112,26 +117,50 @@ fn main() {
     opengl_update.add_system(systems::update_wireframe);
     opengl_render.add_system(systems::render_scene);
 
-    while !window.should_close() {
-        let before = std::time::Instant::now();
-        window.update(&mut world);
-        update.run(&mut world);
-        opengl_update.run(&mut world);
+    event_loop.run(move |event, _, control_flow| {
+        // ControlFlow::Poll continuously runs the event loop, even if the OS hasn't
+        // dispatched any events. This is ideal for games and similar applications.
+        control_flow.set_poll();
+    
+        match event {
+            Event::WindowEvent {
+                event: WindowEvent::CloseRequested,
+                ..
+            } => {
+                settings::save(world.get_resource::<Settings>().unwrap()).expect("Unable to save settings!");
+                println!("Stopping...");
+                control_flow.set_exit();
+            },
+            Event::MainEventsCleared => {
+                let before = std::time::Instant::now();
 
-        unsafe {
-            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+                // Application update code.
+                let mut input = world.get_resource_mut::<Input<KeyCode>>().unwrap();
+                input.update(); //Must come before our input.dispatch()
+
+                let mut time = world.get_resource_mut::<Time>().unwrap();
+                time.update();
+
+                update.run(&mut world);
+                opengl_update.run(&mut world);
+        
+                // Render
+                unsafe {
+                    gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+                }
+        
+                opengl_render.run(&mut world);
+        
+                gl_context.handle.swap_buffers();
+                let after = std::time::Instant::now();
+        
+                let settings = world.get_resource_mut::<Settings>().unwrap();
+                let time_spent = after.duration_since(before);
+                let budget = std::time::Duration::new(0, 1_000_000_000u32 / settings.swap_interval as u32);
+                ::std::thread::sleep(budget.saturating_sub(time_spent));
+            },
+            _ => {}
         }
+    });
 
-        opengl_render.run(&mut world);
-
-        window.swap_buffers();
-        let after = std::time::Instant::now();
-
-        let settings = world.get_resource_mut::<Settings>().unwrap();
-        let time_spent = after.duration_since(before);
-        let budget = std::time::Duration::new(0, 1_000_000_000u32 / settings.swap_interval as u32);
-        ::std::thread::sleep(budget.saturating_sub(time_spent));
-    }
-
-    settings::save(world.get_resource::<Settings>().unwrap()).expect("Unable to save settings!");
 }

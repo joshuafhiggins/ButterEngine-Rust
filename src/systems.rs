@@ -1,28 +1,29 @@
-use crate::{components::*, resources::*, settings::Settings, mesh::Mesh, renderer::GPUObject};
+use crate::{components::*, resources::*, settings::Settings, mesh::Mesh, renderer::GPUObject, window::Window};
 use bevy_ecs::prelude::*;
-use glfw::Key;
+use winit::{keyboard::KeyCode, window::CursorGrabMode};
 
 const CAMERA_SPEED: f32 = 1.0; // adjust accordingly
 const SENSITIVITY: f32 = 0.1;
 
 pub fn move_camera(
     mut query: Query<(&mut Position, &mut Rotation, &mut Camera)>,
-    input: Res<Input<glfw::Key>>,
+    input: Res<Input<KeyCode>>,
+    window: Res<Window>,
     time: Res<Time>,
 ) {
     for (mut position, mut direction, mut camera) in &mut query {
-        if input.cursor_mode() == glfw::CursorMode::Disabled {
+        if input.cursor_mode() == CursorGrabMode::None {
             let move_factor = CAMERA_SPEED * time.delta_seconds();
-            if input.pressed(Key::W) {
+            if input.pressed(KeyCode::KeyW) {
                 position.d += move_factor * camera.front;
             }
-            if input.pressed(Key::S) {
+            if input.pressed(KeyCode::KeyS) {
                 position.d -= move_factor * camera.front;
             }
-            if input.pressed(Key::A) {
+            if input.pressed(KeyCode::KeyA) {
                 position.d -= camera.front.cross(camera.up).normalize() * move_factor;
             }
-            if input.pressed(Key::D) {
+            if input.pressed(KeyCode::KeyD) {
                 position.d += camera.front.cross(camera.up).normalize() * move_factor;
             }
 
@@ -60,16 +61,16 @@ pub fn move_camera(
     }
 }
 
-pub fn update_wireframe(input: Res<Input<glfw::Key>>, mut settings: ResMut<Settings>) {
-    if input.just_pressed(glfw::Key::F5) {
+pub fn update_wireframe(input: Res<Input<KeyCode>>, mut settings: ResMut<Settings>) {
+    if input.just_pressed(KeyCode::F5) {
         crate::renderer::toggle_wireframe(&mut settings.is_wireframe);
     }
 }
 
-pub fn update_projection(mut query: Query<&mut Camera>, window: Res<WindowResource>, settings: Res<Settings>) {
+pub fn update_projection(mut query: Query<&mut Camera>, window: Res<Window>, settings: Res<Settings>) {
     if window.is_changed() || settings.is_changed() {
         for mut camera in &mut query {
-            camera.set_projection(settings.fov, window.ratio(), 0.01, 100.0);
+            camera.set_projection(settings.fov, window.aspect_ratio(), 0.01, 100.0);
         }
     }
 }

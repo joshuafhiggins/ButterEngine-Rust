@@ -1,4 +1,5 @@
 use simple_error::*;
+use winit::{keyboard::KeyCode, event::ElementState, window::CursorGrabMode};
 
 use std::{collections::HashMap, error::Error, sync::Arc, time::*};
 
@@ -14,7 +15,7 @@ pub struct Input<T> {
     ypos: f64,
     last_xpos: f64,
     last_ypos: f64,
-    cursor_mode: glfw::CursorMode,
+    cursor_mode: CursorGrabMode,
 }
 
 #[derive(PartialEq)]
@@ -24,14 +25,14 @@ enum KeyState {
     Released,
 }
 
-impl Input<glfw::Key> {
-    pub fn new() -> Input<glfw::Key> {
-        Input { keys: HashMap::new(), xpos: 0.0, ypos: 0.0, last_xpos: 0.0, last_ypos: 0.0, cursor_mode: glfw::CursorMode::Normal }
+impl Input<KeyCode> {
+    pub fn new() -> Input<KeyCode> {
+        Input { keys: HashMap::new(), xpos: 0.0, ypos: 0.0, last_xpos: 0.0, last_ypos: 0.0, cursor_mode: CursorGrabMode::None }
     }
 
-    pub fn dispatch_keyboard(&mut self, key: glfw::Key, action: glfw::Action) {
+    pub fn dispatch_keyboard(&mut self, key: KeyCode, action: ElementState) {
         match action {
-            glfw::Action::Release => {
+            ElementState::Released => {
                 if self.keys.contains_key(&key) {
                     let value = self.keys.get_mut(&key).unwrap();
                     *value = KeyState::Released
@@ -39,7 +40,7 @@ impl Input<glfw::Key> {
                     self.keys.insert(key, KeyState::Released);
                 }
             },
-            glfw::Action::Press => {
+            ElementState::Pressed => {
                 if self.keys.contains_key(&key) {
                     let value = self.keys.get_mut(&key).unwrap();
                     match value {
@@ -51,11 +52,10 @@ impl Input<glfw::Key> {
                     self.keys.insert(key, KeyState::JustPressed);
                 }
             },
-            _ => {},
         }
     }
 
-    pub fn dispatch_mouse(&mut self, xpos: f64, ypos: f64) {
+    pub fn dispatch_mouse_motion(&mut self, xpos: f64, ypos: f64) {
         self.xpos = xpos;
         self.ypos = ypos;
     }
@@ -72,21 +72,21 @@ impl Input<glfw::Key> {
         self.last_ypos = self.ypos;
     }
 
-    pub fn just_pressed(&self, key: glfw::Key) -> bool {
+    pub fn just_pressed(&self, key: KeyCode) -> bool {
         match self.keys.get(&key).unwrap_or(&KeyState::Released) {
             KeyState::Pressed => false,
             KeyState::JustPressed => true,
             KeyState::Released => false,
         }
     }
-    pub fn pressed(&self, key: glfw::Key) -> bool {
+    pub fn pressed(&self, key: KeyCode) -> bool {
         match self.keys.get(&key).unwrap_or(&KeyState::Released) {
             KeyState::Pressed => true,
             KeyState::JustPressed => false,
             KeyState::Released => false,
         }
     }
-    pub fn released(&self, key: glfw::Key) -> bool {
+    pub fn released(&self, key: KeyCode) -> bool {
         match self.keys.get(&key).unwrap_or(&KeyState::Released) {
             KeyState::Released => true,
             KeyState::JustPressed => false,
@@ -106,10 +106,10 @@ impl Input<glfw::Key> {
     pub fn last_ypos(&self) -> f64 {
         self.last_ypos
     }
-    pub fn cursor_mode(&self) -> glfw::CursorMode {
+    pub fn cursor_mode(&self) -> CursorGrabMode {
         self.cursor_mode
     }
-    pub fn set_cursor_mode(&mut self, mode: glfw::CursorMode) {
+    pub fn set_cursor_mode(&mut self, mode: CursorGrabMode) {
         self.cursor_mode = mode;
     }
 }
@@ -188,25 +188,6 @@ impl Time {
         pub fn delta_seconds_f64(&self) -> f64 {
             self.delta_seconds_f64
         }
-}
-
-#[derive(Resource)]
-pub struct WindowResource {
-    ratio: f32
-}
-
-impl WindowResource {
-    pub fn new(window: &Window) -> Self {
-        WindowResource { ratio: window.aspect_ratio() }
-    }
-
-    pub fn ratio(&self) -> f32 {
-        self.ratio
-    }
-
-    pub fn set_ratio(&mut self, window: &Window) {
-        self.ratio = window.aspect_ratio();
-    }
 }
 
 //TODO: Models
