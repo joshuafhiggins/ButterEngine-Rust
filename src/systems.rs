@@ -1,34 +1,42 @@
 use crate::{components::*, resources::*, settings::Settings, mesh::Mesh, renderer::GPUObject, window::Window};
 use bevy_ecs::prelude::*;
 use winit::{keyboard::KeyCode, window::CursorGrabMode};
+use winit::event::MouseButton;
 
 const CAMERA_SPEED: f32 = 1.0; // adjust accordingly
 const SENSITIVITY: f32 = 0.1;
 
 pub fn move_camera(
     mut query: Query<(&mut Position, &mut Rotation, &mut Camera)>,
-    input: Res<Input<KeyCode>>,
-    window: Res<Window>,
+    input: Res<Input>,
+    mut window: ResMut<Window>,
     time: Res<Time>,
 ) {
     for (mut position, mut direction, mut camera) in &mut query {
-        if input.cursor_mode() == CursorGrabMode::None {
+        if input.mouse_just_pressed(MouseButton::Left) {
+            window.set_cursor_grab(CursorGrabMode::Confined);
+        }
+        if input.mouse_just_pressed(MouseButton::Right) {
+            window.set_cursor_grab(CursorGrabMode::None);
+        }
+
+        if window.cursor_grab() == CursorGrabMode::Confined {
             let move_factor = CAMERA_SPEED * time.delta_seconds();
-            if input.pressed(KeyCode::KeyW) {
+            if input.keyboard_pressed(KeyCode::KeyW) {
                 position.d += move_factor * camera.front;
             }
-            if input.pressed(KeyCode::KeyS) {
+            if input.keyboard_pressed(KeyCode::KeyS) {
                 position.d -= move_factor * camera.front;
             }
-            if input.pressed(KeyCode::KeyA) {
+            if input.keyboard_pressed(KeyCode::KeyA) {
                 position.d -= camera.front.cross(camera.up).normalize() * move_factor;
             }
-            if input.pressed(KeyCode::KeyD) {
+            if input.keyboard_pressed(KeyCode::KeyD) {
                 position.d += camera.front.cross(camera.up).normalize() * move_factor;
             }
 
-            let mut xoffset = input.xpos() - input.last_xpos();
-            let mut yoffset = input.last_ypos() - input.ypos();
+            let mut xoffset = input.delta_xpos();
+            let mut yoffset = -input.delta_ypos();
 
             if camera.first_mouse {
                 xoffset = 0.0;
@@ -61,8 +69,8 @@ pub fn move_camera(
     }
 }
 
-pub fn update_wireframe(input: Res<Input<KeyCode>>, mut settings: ResMut<Settings>) {
-    if input.just_pressed(KeyCode::F5) {
+pub fn update_wireframe(input: Res<Input>, mut settings: ResMut<Settings>) {
+    if input.keyboard_just_pressed(KeyCode::F5) {
         crate::renderer::toggle_wireframe(&mut settings.is_wireframe);
     }
 }

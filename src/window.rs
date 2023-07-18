@@ -1,17 +1,16 @@
 use bevy_ecs::prelude::*;
 use raw_gl_context::{GlContext, GlConfig, Profile};
 
-use crate::resources::*;
-
 use winit::{
-    event::{Event, WindowEvent, DeviceEvent, RawKeyEvent, ElementState, KeyEvent},
-    event_loop::{EventLoop, ControlFlow},
-    window::WindowBuilder, dpi::{Size, PhysicalSize, PhysicalPosition}, keyboard::KeyCode,
+    event_loop::EventLoop,
+    window::WindowBuilder, dpi::{PhysicalSize, PhysicalPosition},
 };
+use winit::window::CursorGrabMode;
 
 #[derive(Resource)]
 pub struct Window {
-    handle: winit::window::Window
+    handle: winit::window::Window,
+    grab_mode: CursorGrabMode,
 }
 
 pub struct RenderContext {
@@ -51,9 +50,9 @@ impl Window {
 
         window.set_visible(true);
 
-        let mut our_window = Window { handle: window };
+        let mut our_window = Window { handle: window, grab_mode: CursorGrabMode::None };
 
-        our_window.center();
+        our_window.center_on_display();
         our_window.init_gl();
         
         let our_context = RenderContext { handle: context };
@@ -61,12 +60,19 @@ impl Window {
         (our_window, our_context)
     }
 
-    pub fn center(&mut self) {
+    pub fn center_on_display(&mut self) {
         let win_size = self.handle.inner_size();
         let monitor_size = self.handle.primary_monitor().unwrap().size();
         self.handle.set_outer_position(PhysicalPosition::new(
             (monitor_size.width - win_size.width) / 2, 
             (monitor_size.height - win_size.height) / 2));
+    }
+
+    pub fn center_of_window(&self) -> PhysicalPosition<u32> {
+        let win_size = self.handle.inner_size();
+        PhysicalPosition::new(
+            win_size.width / 2,
+            win_size.height / 2)
     }
 
     pub fn init_gl(&self) {
@@ -83,51 +89,34 @@ impl Window {
         size.width as f32 / size.height as f32
     }
 
-    pub fn handle_window_event(&mut self, world: &mut World, event: Event<()>, control_flow: &mut ControlFlow) {
-        match event { //TODO: Handle all events
-            Event::WindowEvent { event, .. } => {
-                match event {
-                    WindowEvent::KeyboardInput { event: KeyEvent { physical_key: KeyCode::Escape, state: ElementState::Pressed, .. }, .. } => {
-                        control_flow.set_exit();
-                    },
-                    WindowEvent::KeyboardInput { event: KeyEvent { physical_key, state, .. }, .. } => {
-                        let mut input = world.get_resource_mut::<Input<KeyCode>>().unwrap();
-                        input.dispatch_keyboard(physical_key, state);
-                    },
-                    WindowEvent::Resized(size) => {
-                        unsafe {
-                            gl::Viewport(0, 0, size.width as i32, size.height as i32);
-                        }
-                    }
-                    // DeviceEvent::Button { button, state } => {
-                    //     let mut input = world.get_resource_mut::<Input<KeyCode>>().unwrap();
-                    //     input.dispatch_keyboard(physical_key, state);
-                    // }
-                    
-                    _ => {}
-                }
-            },
-            Event::DeviceEvent { event, .. } => {
-                match event {
-                    DeviceEvent::MouseMotion { delta } => {
-                        let mut input = world.get_resource_mut::<Input<KeyCode>>().unwrap();
-                        input.dispatch_mouse_motion(delta.0, delta.1);
-                    },
-                    _ => {}
-                }
-            },
+    pub fn cursor_grab(&self) -> CursorGrabMode {
+        self.grab_mode
+    }
 
-            // glfw::WindowEvent::MouseButton(glfw::MouseButton::Button1, glfw::Action::Press, _) => {
-            //     let mut input = world.get_resource_mut::<Input<glfw::Key>>().unwrap();
-            //     self.handle.set_cursor_mode(glfw::CursorMode::Disabled);
-            //     input.set_cursor_mode(glfw::CursorMode::Disabled);
-            // }
-            // glfw::WindowEvent::Key(glfw::Key::Space, _, glfw::Action::Press, _) => {
-            //     let mut input = world.get_resource_mut::<Input<glfw::Key>>().unwrap();
-            //     self.handle.set_cursor_mode(glfw::CursorMode::Normal);
-            //     input.set_cursor_mode(glfw::CursorMode::Normal);
-            // }
-            _ => {}
+    pub fn set_cursor_grab(&mut self, mut mode: CursorGrabMode) {
+
+        if cfg!(target_os = "macos") && mode == CursorGrabMode::Confined {
+            mode = CursorGrabMode::Locked;
+        }
+
+
+        // match mode {
+        //     CursorGrabMode::None => self.handle.set_cursor_visible(true),
+        //     CursorGrabMode::Confined => self.handle.set_cursor_visible(false),
+        //     CursorGrabMode::Locked => panic!(), //Platform incompatibility, always expect Confined and change to Locked on macOS
+        // }
+
+        if cfg!(target_os = "macos") {
+            mode = CursorGrabMode::Locked;
+        }
+
+        let _ = self.handle.set_cursor_grab(mode);
+        self.grab_mode = mode;
+    }
+
+    pub fn update(&mut self) {
+        if self.grab_mode == CursorGrabMode::Confined && self.handle.has_focus() {
+            let _ = self.handle.set_cursor_position(self.center_of_window());
         }
     }
 }

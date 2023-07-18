@@ -1,21 +1,20 @@
 use simple_error::*;
-use winit::{keyboard::KeyCode, event::ElementState, window::CursorGrabMode};
+use winit::{keyboard::KeyCode, event::ElementState};
 
 use std::{collections::HashMap, error::Error, sync::Arc, time::*};
 
 use bevy_ecs::system::Resource;
+use winit::event::MouseButton;
 
-use crate::{texture::{Texture}, shader::{Shader}, material::{Material, MagnificationFilter, self}, settings::Settings, window::Window};
+use crate::{texture::{Texture}, shader::{Shader}, material::{Material, MagnificationFilter, self}, settings::Settings};
 
 //TODO: Fix accesses
 #[derive(Resource)]
-pub struct Input<T> {
-    keys: HashMap<T, KeyState>,
-    xpos: f64,
-    ypos: f64,
-    last_xpos: f64,
-    last_ypos: f64,
-    cursor_mode: CursorGrabMode,
+pub struct Input {
+    keyboard_keys: HashMap<KeyCode, KeyState>,
+    mouse_buttons: HashMap<MouseButton, KeyState>,
+    delta_xpos: f64,
+    delta_ypos: f64,
 }
 
 #[derive(PartialEq)]
@@ -25,92 +24,124 @@ enum KeyState {
     Released,
 }
 
-impl Input<KeyCode> {
-    pub fn new() -> Input<KeyCode> {
-        Input { keys: HashMap::new(), xpos: 0.0, ypos: 0.0, last_xpos: 0.0, last_ypos: 0.0, cursor_mode: CursorGrabMode::None }
+impl Input {
+    pub fn new() -> Input {
+        Input { keyboard_keys: HashMap::new(), mouse_buttons: HashMap::new(), delta_xpos: 0.0, delta_ypos: 0.0 }
     }
 
     pub fn dispatch_keyboard(&mut self, key: KeyCode, action: ElementState) {
         match action {
             ElementState::Released => {
-                if self.keys.contains_key(&key) {
-                    let value = self.keys.get_mut(&key).unwrap();
+                if self.keyboard_keys.contains_key(&key) {
+                    let value = self.keyboard_keys.get_mut(&key).unwrap();
                     *value = KeyState::Released
                 } else {
-                    self.keys.insert(key, KeyState::Released);
+                    self.keyboard_keys.insert(key, KeyState::Released);
                 }
             },
             ElementState::Pressed => {
-                if self.keys.contains_key(&key) {
-                    let value = self.keys.get_mut(&key).unwrap();
+                if self.keyboard_keys.contains_key(&key) {
+                    let value = self.keyboard_keys.get_mut(&key).unwrap();
                     match value {
                         KeyState::JustPressed => *value = KeyState::Pressed, //THIS CASE NEVER HAPPENS, glfw only sends one pressed event
                         KeyState::Pressed => {},
                         KeyState::Released => *value = KeyState::JustPressed,
                     }
                 } else {
-                    self.keys.insert(key, KeyState::JustPressed);
+                    self.keyboard_keys.insert(key, KeyState::JustPressed);
                 }
             },
         }
     }
 
-    pub fn dispatch_mouse_motion(&mut self, xpos: f64, ypos: f64) {
-        self.xpos = xpos;
-        self.ypos = ypos;
+    pub fn dispatch_mouse_buttons(&mut self, button: MouseButton, action: ElementState) {
+        match action {
+            ElementState::Released => {
+                if self.mouse_buttons.contains_key(&button) {
+                    let value = self.mouse_buttons.get_mut(&button).unwrap();
+                    *value = KeyState::Released
+                } else {
+                    self.mouse_buttons.insert(button, KeyState::Released);
+                }
+            },
+            ElementState::Pressed => {
+                if self.mouse_buttons.contains_key(&button) {
+                    let value = self.mouse_buttons.get_mut(&button).unwrap();
+                    match value {
+                        KeyState::JustPressed => *value = KeyState::Pressed, //THIS CASE NEVER HAPPENS, glfw only sends one pressed event
+                        KeyState::Pressed => {},
+                        KeyState::Released => *value = KeyState::JustPressed,
+                    }
+                } else {
+                    self.mouse_buttons.insert(button, KeyState::JustPressed);
+                }
+            },
+        }
+    }
+
+    pub fn dispatch_mouse_motion(&mut self, delta_xpos: f64, delta_ypos: f64) {
+        self.delta_xpos = delta_xpos;
+        self.delta_ypos = delta_ypos;
     }
 
     //Call this before checking for new input events
     pub fn update(&mut self) {
-        for (_, v) in &mut self.keys {
+        for (_, v) in &mut self.keyboard_keys {
             if *v == KeyState::JustPressed {
                 *v = KeyState::Pressed;
             }
         }
-
-        self.last_xpos = self.xpos;
-        self.last_ypos = self.ypos;
     }
 
-    pub fn just_pressed(&self, key: KeyCode) -> bool {
-        match self.keys.get(&key).unwrap_or(&KeyState::Released) {
+    pub fn keyboard_just_pressed(&self, key: KeyCode) -> bool {
+        match self.keyboard_keys.get(&key).unwrap_or(&KeyState::Released) {
             KeyState::Pressed => false,
             KeyState::JustPressed => true,
             KeyState::Released => false,
         }
     }
-    pub fn pressed(&self, key: KeyCode) -> bool {
-        match self.keys.get(&key).unwrap_or(&KeyState::Released) {
+    pub fn keyboard_pressed(&self, key: KeyCode) -> bool {
+        match self.keyboard_keys.get(&key).unwrap_or(&KeyState::Released) {
             KeyState::Pressed => true,
             KeyState::JustPressed => false,
             KeyState::Released => false,
         }
     }
-    pub fn released(&self, key: KeyCode) -> bool {
-        match self.keys.get(&key).unwrap_or(&KeyState::Released) {
+    pub fn keyboard_released(&self, key: KeyCode) -> bool {
+        match self.keyboard_keys.get(&key).unwrap_or(&KeyState::Released) {
             KeyState::Released => true,
             KeyState::JustPressed => false,
             KeyState::Pressed => false,
         }
     }
 
-    pub fn xpos(&self) -> f64 {
-        self.xpos
+    pub fn mouse_just_pressed(&self, button: MouseButton) -> bool {
+        match self.mouse_buttons.get(&button).unwrap_or(&KeyState::Released) {
+            KeyState::Pressed => false,
+            KeyState::JustPressed => true,
+            KeyState::Released => false,
+        }
     }
-    pub fn ypos(&self) -> f64 {
-        self.ypos
+    pub fn mouse_pressed(&self, button: MouseButton) -> bool {
+        match self.mouse_buttons.get(&button).unwrap_or(&KeyState::Released) {
+            KeyState::Pressed => true,
+            KeyState::JustPressed => false,
+            KeyState::Released => false,
+        }
     }
-    pub fn last_xpos(&self) -> f64 {
-        self.last_xpos
+    pub fn mouse_released(&self, button: MouseButton) -> bool {
+        match self.mouse_buttons.get(&button).unwrap_or(&KeyState::Released) {
+            KeyState::Released => true,
+            KeyState::JustPressed => false,
+            KeyState::Pressed => false,
+        }
     }
-    pub fn last_ypos(&self) -> f64 {
-        self.last_ypos
+
+    pub fn delta_xpos(&self) -> f64 {
+        self.delta_xpos
     }
-    pub fn cursor_mode(&self) -> CursorGrabMode {
-        self.cursor_mode
-    }
-    pub fn set_cursor_mode(&mut self, mode: CursorGrabMode) {
-        self.cursor_mode = mode;
+    pub fn delta_ypos(&self) -> f64 {
+        self.delta_ypos
     }
 }
 

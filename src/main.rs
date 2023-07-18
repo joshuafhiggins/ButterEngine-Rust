@@ -21,8 +21,8 @@ use mesh::Mesh;
 use resources::*;
 use settings::Settings;
 use window::Window;
-use winit::event::{Event, WindowEvent};
-use winit::event_loop::EventLoop;
+use winit::event::{DeviceEvent, ElementState, Event, KeyEvent, WindowEvent};
+use winit::event_loop::{ControlFlow, EventLoop};
 use winit::keyboard::KeyCode;
 
 fn main() {
@@ -123,21 +123,17 @@ fn main() {
         control_flow.set_poll();
     
         match event {
-            Event::WindowEvent {
-                event: WindowEvent::CloseRequested,
-                ..
-            } => {
-                settings::save(world.get_resource::<Settings>().unwrap()).expect("Unable to save settings!");
-                println!("Stopping...");
-                control_flow.set_exit();
+            Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => {
+                exit(control_flow, &mut world);
             },
             Event::MainEventsCleared => {
                 let before = std::time::Instant::now();
 
                 // Application update code.
-                let mut input = world.get_resource_mut::<Input<KeyCode>>().unwrap();
+                let mut input = world.get_resource_mut::<Input>().unwrap();
                 input.update(); //Must come before our input.dispatch()
-
+                let mut window = world.get_resource_mut::<Window>().unwrap();
+                window.update();
                 let mut time = world.get_resource_mut::<Time>().unwrap();
                 time.update();
 
@@ -148,10 +144,9 @@ fn main() {
                 unsafe {
                     gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
                 }
-        
                 opengl_render.run(&mut world);
-        
                 gl_context.handle.swap_buffers();
+
                 let after = std::time::Instant::now();
         
                 let settings = world.get_resource_mut::<Settings>().unwrap();
@@ -159,8 +154,44 @@ fn main() {
                 let budget = std::time::Duration::new(0, 1_000_000_000u32 / settings.swap_interval as u32);
                 ::std::thread::sleep(budget.saturating_sub(time_spent));
             },
+
+            Event::WindowEvent { event, .. } => {
+                match event {
+                    WindowEvent::KeyboardInput { event: KeyEvent { physical_key: KeyCode::Escape, state: ElementState::Pressed, .. }, .. } => {
+                        exit(control_flow, &mut world);
+                    }
+                    WindowEvent::KeyboardInput { event: KeyEvent { physical_key, state, .. }, .. } => {
+                        let mut input = world.get_resource_mut::<Input>().unwrap();
+                        input.dispatch_keyboard(physical_key, state);
+                    }
+                    WindowEvent::Resized(size) => {
+                        unsafe {
+                            gl::Viewport(0, 0, size.width as i32, size.height as i32);
+                        }
+                    }
+                    WindowEvent::MouseInput { button, state, .. } => {
+                        let mut input = world.get_resource_mut::<Input>().unwrap();
+                        input.dispatch_mouse_buttons(button, state);
+                    }
+                    _ => {}
+                }
+            }
+            Event::DeviceEvent { event, .. } => {
+                match event {
+                    DeviceEvent::MouseMotion { delta } => {
+                        let mut input = world.get_resource_mut::<Input>().unwrap();
+                        input.dispatch_mouse_motion(delta.0, delta.1);
+                    }
+                    _ => {}
+                }
+            }
             _ => {}
         }
     });
+}
 
+fn exit(control_flow: &mut ControlFlow, world: &mut World) {
+    settings::save(world.get_resource::<Settings>().unwrap()).expect("Unable to save settings!");
+    println!("Stopping...");
+    control_flow.set_exit();
 }
