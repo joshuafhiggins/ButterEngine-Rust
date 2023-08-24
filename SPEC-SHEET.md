@@ -1,4 +1,4 @@
-SPECIFICATION OF BUTTER ENGINE
+BUTTER ENGINE
 ------------------------------
 
 Goals
